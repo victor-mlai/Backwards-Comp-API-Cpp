@@ -131,9 +131,6 @@ enum SomeEnum {
   
   <td>
   
-This is already backwards-compatible.
-
-No further changes needed.
 
 ```cpp
 enum SomeEnum : std::uint64_t {
@@ -143,11 +140,19 @@ enum SomeEnum : std::uint64_t {
 };
 ```
 
+This is already backwards-compatible, because
+the following code does not give any underflow warnings
+(which would have been a breaking change
+when compiled with "Treat Warnings as Errors").
+```cpp
+unsigned x = SomeEnum::C;
+```
+    
   </td> 
   <td>
-  
-  Users won't be able to forward declare `InitName` anymore.
-  
+
+  Strangely, none.
+    
   </td> 
 
 </tr>
@@ -156,7 +161,9 @@ enum SomeEnum : std::uint64_t {
 </table>
 
 # Todo
-- Change enum to enum class
-- Add parameters
-- Change base class
-- ...
+- Add tests to ensure no breakings on user side
+- Add items to list:
+  - Change enum to enum class
+  - Add parameters to a function
+  - Change a base class
+  - ...
