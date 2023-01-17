@@ -1,10 +1,14 @@
-# Backwards-Comp-API-Cpp
-This project contains a list of all the changes you would like to do to your public API toghether with ways on making these changes as non-breaking/backwards compatible, and as boilerplate free as possible.
+# Backwards Compatibility tricks for API changes in C++
+This project contains a list of all the changes you would
+like to do to your public API toghether with tricks on making
+these changes as non-breaking/backwards compatible,
+and as boilerplate free as possible.
 
 # Contributing
 This project just got created.
 
-Please feel free to create Issues and Pull Requests in case you find this list incomplete.
+Please feel free to create Issues and Pull Requests
+in case you find this list incomplete.
 
 # List
 
@@ -61,7 +65,7 @@ using InitName = FinalName;
 // rename v1 to v2
 namespace path::to::v1 {
   struct Bar {};
-  constexpr Type VAL = 42;
+  constexpr int VAL = 42;
   enum SomeEnum { A, B, C };
 }
 ```
@@ -74,7 +78,7 @@ namespace path::to::v1 {
 // simply rename
 namespace path::to::v2 {
   struct Bar {};
-  constexpr Type VAL = 42;
+  constexpr int VAL = 42;
   enum SomeEnum { A, B, C };
 }
 
@@ -94,6 +98,64 @@ namespace path::to::v1 {
   </td> 
 
 </tr>
+
+
+</table>
+
+
+
+## Moves
+
+<table>
+<tr>
+  <td> Move a class/symbol to a different namespace </td>
+
+  <td>
+
+```cpp
+// move to v2
+namespace path::to::v1 {
+  struct Bar {};
+  constexpr int VAL = 42;
+  enum SomeEnum { A, B, C };
+}
+```
+
+  </td>
+  
+  <td>
+
+```cpp
+// rename v1 to v2
+namespace path::to::v2 {
+  struct Bar {};
+  constexpr int VAL = 42;
+  enum SomeEnum { A, B, C };
+}
+
+// add using declarations for each
+// symbol in the old namespace
+namespace path::to::v1 {
+  using path::to::v2::Bar;
+  using path::to::v2::VAL;
+  using path::to::v2::SomeEnum;
+  using path::to::v2::SomeEnum::A;
+  using path::to::v2::SomeEnum::B;
+  using path::to::v2::SomeEnum::C;
+}
+```
+
+  </td>
+  
+  <td>
+
+You need to add a using declaration for each
+enum field since it is unscoped in the old namespace.
+
+  </td> 
+
+</tr>
+
 
 </table>
 
