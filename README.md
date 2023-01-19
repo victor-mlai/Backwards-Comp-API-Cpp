@@ -13,6 +13,8 @@ in case you find this list incomplete.
 # List
 
 ## Renames
+-------------------------------------------------------------------------
+
 <table>
 <tr>
   <td> Change Description </td>
@@ -29,7 +31,7 @@ in case you find this list incomplete.
   <td>
 
 ```cpp
-// rename InitName to FinalName
+// Todo: rename InitName to FinalName
 struct InitName {};
 ```
 
@@ -62,7 +64,7 @@ using InitName = FinalName;
   <td>
 
 ```cpp
-// rename v1 to v2
+// Todo: rename v1 to v2
 namespace path::to::v1 {
   struct Bar {};
   constexpr int VAL = 42;
@@ -105,6 +107,7 @@ namespace path::to::v1 {
 
 
 ## Moves
+-------------------------------------------------------------------------
 
 <table>
 <tr>
@@ -113,7 +116,7 @@ namespace path::to::v1 {
   <td>
 
 ```cpp
-// move to v2
+// Todo: move these only to v2
 namespace path::to::v1 {
   struct Bar {};
   constexpr int VAL = 42;
@@ -126,7 +129,7 @@ namespace path::to::v1 {
   <td>
 
 ```cpp
-// rename v1 to v2
+// simply move them
 namespace path::to::v2 {
   struct Bar {};
   constexpr int VAL = 42;
@@ -157,12 +160,67 @@ enum field since it is unscoped in the old namespace.
 </tr>
 
 
+<tr>
+  <td>
+  
+  Move some internal symbols to a different class
+  
+  </td>
+
+  <td>
+
+```cpp
+// Todo: move these to NewClass
+struct OldClass {
+  struct Bar {};
+  constexpr int VAL = 42;
+  enum SomeEnum { A, B, C };
+}
+```
+
+  </td>
+  
+  <td>
+
+```cpp
+// simply move them
+struct NewClass {
+  struct Bar {};
+  static constexpr int VAL = 42;
+  enum SomeEnum { A, B, C };
+}
+
+// then add these in the old class
+struct OldClass {
+  using Bar = OldClass::Bar;
+  static constexpr int VAL = OldClass::VAL;
+  using SomeEnum = OldClass::SomeEnum;
+  // to not break "OldClass::A" uses
+  static constexpr SomeEnum A = OldClass::A;
+  static constexpr SomeEnum B = OldClass::B;
+  static constexpr SomeEnum C = OldClass::C;
+}
+```
+
+  </td>
+  
+  <td>
+
+You need to add a `static constexpr` for each
+enum field since it is unscoped in the old class.
+
+  </td> 
+
+</tr>
+
+
 </table>
 
 
 
 
 ## Misc
+-------------------------------------------------------------------------
 
 <table>
 <tr>
@@ -183,6 +241,7 @@ we might end up in the situation where we
 want to add D > C however we are at the limit.
 
 ```cpp
+// Todo: change to std::uint64_t
 enum SomeEnum {
   ...,
   C = 0xFFFF'FFFF
