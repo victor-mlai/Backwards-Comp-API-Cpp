@@ -11,9 +11,21 @@ struct FinalName {};
 using InitName = FinalName;
 #endif
 
+// TODO: test that forward declarations fail to compile when OLD_CODE_ENABLED is OFF
+// struct InitName;
+
+void f(const InitName& val = InitName()) { (void)val; }
+
 TEST(Renames, BasicAssertions) {
     InitName obj;
     obj = InitName{};
 
+    InitName obj2(obj);
+    InitName obj3 = std::move(obj2);
+
     static_assert(sizeof(obj) == 1);
+    static_assert(sizeof(obj2) == 1);
+
+    f(obj);
+    f();
 }
