@@ -1,7 +1,5 @@
 set(TARGET_NAME bcAPI_tests)
 
-enable_testing()
-
 add_executable(${TARGET_NAME}
   first_test.cpp
 )

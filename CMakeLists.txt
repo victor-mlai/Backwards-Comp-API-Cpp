@@ -21,3 +21,6 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
 add_subdirectory(tests)
+
+enable_testing()
+add_test(NAME MyTests COMMAND bcAPI_tests)
