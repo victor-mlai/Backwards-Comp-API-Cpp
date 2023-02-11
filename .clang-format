@@ -10,3 +10,4 @@ BreakConstructorInitializers: BeforeComma
 AllowShortCaseLabelsOnASingleLine: false
 FixNamespaceComments: true
 IndentPPDirectives: AfterHash
+ReflowComments: false

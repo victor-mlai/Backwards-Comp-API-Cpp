@@ -11,8 +11,8 @@ struct FinalName {};
 using InitName = FinalName;
 #endif
 
-// TODO: test that forward declarations fail to compile when OLD_CODE_ENABLED is
-// OFF struct InitName;
+// TODO: test that forward declarations fail to compile when OLD_CODE_ENABLED is OFF
+// struct InitName;
 
 void f(const InitName& val = InitName()) {
 	(void)val;

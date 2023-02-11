@@ -30,8 +30,8 @@ namespace path::to::v1 {
 
 using namespace path::to::v1;
 
-// TODO: test that forward declarations fail to compile when OLD_CODE_ENABLED is
-// OFF struct InitName;
+// TODO: test that forward declarations fail to compile when OLD_CODE_ENABLED is OFF
+// struct InitName;
 
 void g(SomeEnum val = A) {
 	(void)val;
