@@ -27,7 +27,7 @@ jobs:
 
     - name: Build_Old
       # Build your program with the given configuration
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} -- -DOLD_CODE_ENABLED
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} -D OLD_CODE_ENABLED
 
     - name: Test_Old
       working-directory: ${{github.workspace}}/build
