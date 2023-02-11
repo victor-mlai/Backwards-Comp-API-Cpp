@@ -9,9 +9,9 @@ target_compile_features(${TARGET_NAME} PRIVATE cxx_std_20)
 target_link_libraries(${TARGET_NAME} PRIVATE gtest_main)
 
 if (MSVC)
-    target_compile_options(${TARGET_NAME} PRIVATE /W4 /WX)
+    target_compile_options(${TARGET_NAME} PRIVATE /WX)
 else ()
-    target_compile_options(${TARGET_NAME} PRIVATE -Wall -Werror -Wno-unused-variable -Wno-unused-const-variable]) #-Wextra -Wpedantic
+    target_compile_options(${TARGET_NAME} PRIVATE -Werror -Wno-unused-variable]) #-Wextra -Wpedantic
 endif ()
 
 if (BCAPI_BUILD_OLD_VERSION)
