@@ -13,8 +13,9 @@ else()
   target_compile_options(${TARGET_NAME} PRIVATE -Wall -Wextra -Wpedantic -Werror)
 endif()
 
-#add_compile_definitions(OLD_CODE_ENABLED)
-#target_compile_definitions(${TARGET_NAME} PRIVATE "OLD_CODE_ENABLED")
+if (BCAPI_BUILD_OLD_VERSION)
+  target_compile_definitions(${TARGET_NAME} PRIVATE "OLD_CODE_ENABLED")
+endif()
 
 include(GoogleTest)
 gtest_discover_tests(${TARGET_NAME})
