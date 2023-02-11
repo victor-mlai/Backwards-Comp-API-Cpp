@@ -1,0 +1,12 @@
+BasedOnStyle: Chromium
+PointerAlignment: Left
+TabWidth: 4
+UseTab: Always
+IndentWidth: 4
+NamespaceIndentation: All
+ColumnLimit: 100
+BreakInheritanceList: BeforeComma
+BreakConstructorInitializers: BeforeComma
+AllowShortCaseLabelsOnASingleLine: false
+FixNamespaceComments: true
+IndentPPDirectives: AfterHash
