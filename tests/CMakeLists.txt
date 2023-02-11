@@ -11,7 +11,7 @@ target_link_libraries(${TARGET_NAME} PRIVATE gtest_main)
 if (MSVC)
     target_compile_options(${TARGET_NAME} PRIVATE /W4 /WX)
 else ()
-    target_compile_options(${TARGET_NAME} PRIVATE -Wall -Werror) #-Wextra -Wpedantic
+    target_compile_options(${TARGET_NAME} PRIVATE -Wall -Werror -Wno-unused-variable -Wno-unused-const-variable]) #-Wextra -Wpedantic
 endif ()
 
 if (BCAPI_BUILD_OLD_VERSION)
