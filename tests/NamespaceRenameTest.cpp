@@ -21,10 +21,9 @@ namespace path::to::v2 {
 	}
 }  // namespace path::to::v2
 
-// add a using namespace
-//  in the old namespace
-namespace path::to::v1 {
-	using namespace path::to::v2;
+// then add a namespace alias
+namespace path::to {
+	namespace v1 = path::to::v2;
 }
 #endif
 
@@ -38,10 +37,10 @@ void g(SomeEnum val = A) {
 }
 
 TEST(Renames, NamespaceRename) {
-	Bar obj;
+	path::to::v1::Bar obj;
 	obj = Bar{};
 
-	Bar obj2(obj);
+	path::to::v1::Bar obj2(obj);
 	Bar obj3 = std::move(obj2);
 
 	static_assert(sizeof(obj) == 1);
@@ -51,5 +50,5 @@ TEST(Renames, NamespaceRename) {
 	f();
 
 	g();
-	g(B);
+	g(path::to::v1::B);
 }

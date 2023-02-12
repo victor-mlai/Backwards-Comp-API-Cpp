@@ -1,9 +1,7 @@
 set(TARGET_NAME bcAPI_tests)
 
-add_executable(${TARGET_NAME}
-        StructRenameTest.cpp
-        NamespaceRenameTest.cpp
-        )
+file(GLOB test_files *Test.cpp)
+add_executable(${TARGET_NAME} ${test_files})
 target_include_directories(${TARGET_NAME} PRIVATE .)
 target_compile_features(${TARGET_NAME} PRIVATE cxx_std_20)
 target_link_libraries(${TARGET_NAME} PRIVATE gtest_main)

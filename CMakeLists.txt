@@ -1,9 +1,10 @@
 cmake_minimum_required(VERSION 3.14)
 
+option(BCAPI_BUILD_OLD_VERSION "If checked, you will build the old version." ON)
 
 project(bcAPI
         HOMEPAGE_URL "https://github.com/victorlaurentiu/Backwards-Comp-API-Cpp"
-        DESCRIPTION "Tricks in C++ for making API changes as non-breaking, boilerplate free and backwards compatible as possible"
+        DESCRIPTION "Tricks in C++ for making API changes as non-breaking and boilerplate free as possible"
         LANGUAGES CXX
         )
 

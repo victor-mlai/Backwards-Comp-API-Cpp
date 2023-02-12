@@ -18,6 +18,11 @@ void f(const InitName& val = InitName()) {
 	(void)val;
 }
 
+struct UserDerived : InitName {
+	UserDerived() : InitName() {}
+
+};
+
 TEST(Renames, BasicAssertions) {
 	InitName obj;
 	obj = InitName{};
@@ -30,4 +35,10 @@ TEST(Renames, BasicAssertions) {
 
 	f(obj3);
 	f();
+
+	UserDerived usd{};
+	f(usd);
+
+	InitName sliced = usd;
+	f(sliced);
 }
