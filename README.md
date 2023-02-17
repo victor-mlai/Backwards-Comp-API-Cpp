@@ -14,6 +14,111 @@ in case you find this list incomplete.
 
 # List
 
+## Changes
+-------------------------------------------------------------------------
+
+<table>
+<tr>
+  <td> Change Description </td>
+  <td> Initial code + change </td>
+  <td> Solution </td>
+  <td> Drawbacks </td>
+</tr>
+
+
+
+<tr>
+  <td> Change function return type </td>
+
+  <td>
+
+```cpp
+// Todo: return UserDefT instead
+bool IsOdd();
+```
+
+  </td>
+
+  <td>
+
+```cpp
+UserDefT IsOdd();
+
+// then add an implicit cast
+// operator inside UserDefT
+struct UserDefT {
+  operator bool() const {...}
+};
+```
+
+  </td>
+  <td>
+
+Users will get errors if they tried to use IsOdd through a function pointer:
+```cpp
+using IsOddFuncT = bool (*)();
+IsOddFuncT func = &IsOdd;
+```
+
+  </td>
+
+</tr>
+
+  
+  
+<tr>
+  <td> Change parameter type </td>
+
+  <td>
+
+```cpp
+// Todo: pass UserDefT instead
+void IsOdd(bool);
+```
+
+  </td>
+
+  <td>
+
+```cpp
+void IsOdd(UserDefT);
+
+// add an implicit constructor
+// inside UserDefT
+struct UserDefT {
+  UserDefT(bool) {...}
+};
+```
+
+  </td>
+  <td>
+
+Users will get errors if they tried to use IsOdd through a function pointer:
+```cpp
+using IsOddFuncT = void (*)(bool);
+IsOddFuncT func = &IsOdd;
+```
+
+The new constructor might unknowningly be used instead.
+```cpp
+// calls UserDefT(bool);
+// instead of UserDefT(int);
+UserDefT(1);
+```
+
+  </td>
+
+</tr>
+
+</table>
+
+
+  
+  
+  
+  
+  
+  
 ## Renames
 -------------------------------------------------------------------------
 
@@ -148,6 +253,13 @@ please include "FinalName.hpp" instead.
 -------------------------------------------------------------------------
 
 <table>
+<tr>
+  <td> Change Description </td>
+  <td> Initial code + change </td>
+  <td> Solution </td>
+  <td> Drawbacks </td>
+</tr>
+
 <tr>
   <td> Move a class/symbol to a different namespace </td>
 
