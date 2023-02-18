@@ -110,6 +110,63 @@ UserDefT(1);
 
 </tr>
 
+
+
+<tr>
+  <td> Change default parameters </td>
+
+  <td>
+
+```cpp
+// Todo: have Opts
+// as default instead
+void IsOdd(
+  int nonDef,
+  bool val = true,
+  float tol = 0.01);
+```
+
+  </td>
+
+  <td>
+
+```cpp
+void IsOdd(
+  int nonDef,
+  Opts opts = {});
+
+// to avoid "ambiguous call"
+// to function", make this
+// function less "specialized"
+template<int = 0>
+void IsOdd(
+  int nonDef,
+  bool val = true,
+  float tol = 0.01);
+```
+
+  </td>
+  <td>
+
+??? should still work
+Users will get errors if they tried to use IsOdd through a function pointer:
+```cpp
+using IsOddFuncT =
+  void (*)(int, bool, float);
+IsOddFuncT func = &IsOdd;
+```
+
+The new constructor might unknowningly be used instead.
+```cpp
+// calls UserDefT(bool);
+// instead of UserDefT(int);
+UserDefT(1);
+```
+
+  </td>
+
+</tr>
+
 </table>
 
 
@@ -373,7 +430,7 @@ enum field since it is unscoped in the old class.
 
 
 
-## Misc
+## Quirks
 -------------------------------------------------------------------------
 
 <table>
@@ -429,6 +486,69 @@ unsigned x = SomeEnum::C;
 Strangely, none.
 
   </td> 
+
+</tr>
+
+<tr>
+  <td> Add Y::fun(Y::X) </td>
+
+  <td>
+  
+```cpp
+namespace Y
+{
+ struct X {..};
+ // TODO: add fun
+}
+
+...
+
+// user already has fun
+// in their namespace
+namespace User
+{
+  void fun(Y::X);
+}
+
+// Their code:
+namespace User
+{
+  void SomeFun() {
+    Y::X x;
+    fun(x); // calls User::fun
+  }
+}
+```
+
+  </td>
+
+  <td>
+
+```cpp
+namespace Y
+{
+ struct X {..};
+ // adding this changed
+ // user's code
+ void fun(Y::X);
+}
+...
+// Their code:
+namespace User
+{
+  void SomeFun() {
+    Y::X x;
+    fun(x); // now calls Y::fun
+  }
+}
+```
+
+  </td> 
+  <td>
+
+Due to ADL (Argument Dependant Lookup, aka if your type X is in namespace Y, when calling fun(X), fun will be looked up by the compiler in the namespace Y first.), if you add a method in your namespace, the user might now call this method instead of theirs.
+
+  </td>
 
 </tr>
 
