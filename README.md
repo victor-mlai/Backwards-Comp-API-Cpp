@@ -14,6 +14,93 @@ in case you find this list incomplete.
 
 # List
 
+## Removes
+-------------------------------------------------------------------------
+
+<table>
+<tr>
+  <td> Change Description </td>
+  <td> Initial code + change </td>
+  <td> Solution </td>
+  <td> Drawbacks </td>
+</tr>
+
+
+
+<tr>
+  <td> Remove `const` in return types </td>
+
+  <td>
+
+```cpp
+// Todo: Remove `const`
+const bool IsOdd();
+```
+
+  </td>
+
+  <td>
+
+```cpp
+bool IsOdd();
+```
+
+  </td>
+  <td>
+
+Users will get errors if they tried to use IsOdd through a function pointer:
+```cpp
+using IsOddFuncT = const bool (*)();
+IsOddFuncT func = &IsOdd;
+```
+
+  </td>
+
+</tr>
+
+
+
+
+
+
+<tr>
+  <td> Remove `const, &` in return types </td>
+
+  <td>
+
+```cpp
+// Todo: Remove `const, &`
+const bool& IsOdd();
+```
+
+  </td>
+
+  <td>
+
+```cpp
+bool IsOdd();
+```
+
+  </td>
+  <td>
+
+Users will get errors if they tried to use IsOdd through a function pointer:
+```cpp
+using IsOddFuncT = const bool (*)();
+IsOddFuncT func = &IsOdd;
+```
+
+
+
+  </td>
+
+</tr>
+
+
+</table>
+
+
+
 ## Changes
 -------------------------------------------------------------------------
 
