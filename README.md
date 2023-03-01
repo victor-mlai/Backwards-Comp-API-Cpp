@@ -14,6 +14,10 @@ in case you find this list incomplete.
 
 # List
 
+Most of these changes can break
+* function pointer aliases
+* virtual method overrides
+
 ## Removes
 -------------------------------------------------------------------------
 
