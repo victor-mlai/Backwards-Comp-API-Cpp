@@ -1,7 +1,7 @@
 # Backwards Compatibility tricks for API changes in C++
 
 This project contains a list of all the changes you would
-like to do to your public API toghether with tricks on making
+like to do to your public API together with tricks on making
 these changes as non-breaking/backwards compatible,
 and as boilerplate free as possible.
 
@@ -12,9 +12,21 @@ This project just got created.
 Please feel free to create Issues and Pull Requests
 in case you find this list incomplete.
 
+## Project structure
+
+/include contains the "unstable" library which has lots of Todos of API changes.
+
+/tests represents the users of the library, and all their code must compile after the API change.
+
+/neg-tests contains code that should not compile after the API change.
+
+The macro OLD_CODE_ENABLED controls whether the code is in "before" or "after" the API change.
+
 # List
 
-Most of these changes can break
+Please consider that the most likely code to break is the following,
+and it will not be repeated over and over in the following list:
+
 * function pointer aliases
 * virtual method overrides
 
@@ -53,6 +65,7 @@ bool IsOdd();
   <td>
 
 Users will get errors if they tried to use IsOdd through a function pointer:
+
 ```cpp
 using IsOddFuncT = const bool (*)();
 IsOddFuncT func = &IsOdd;
@@ -89,12 +102,11 @@ bool IsOdd();
   <td>
 
 Users will get errors if they tried to use IsOdd through a function pointer:
+
 ```cpp
 using IsOddFuncT = const bool (*)();
 IsOddFuncT func = &IsOdd;
 ```
-
-
 
   </td>
 
@@ -146,6 +158,7 @@ struct UserDefT {
   <td>
 
 Users will get errors if they tried to use IsOdd through a function pointer:
+
 ```cpp
 using IsOddFuncT = bool (*)();
 IsOddFuncT func = &IsOdd;
@@ -155,8 +168,8 @@ IsOddFuncT func = &IsOdd;
 
 </tr>
 
-  
-  
+
+
 <tr>
   <td> Change parameter type </td>
 
@@ -185,12 +198,14 @@ struct UserDefT {
   <td>
 
 Users will get errors if they tried to use IsOdd through a function pointer:
+
 ```cpp
 using IsOddFuncT = void (*)(bool);
 IsOddFuncT func = &IsOdd;
 ```
 
-The new constructor might unknowningly be used instead.
+The new constructor might unknowingly be used instead.
+
 ```cpp
 // calls UserDefT(bool);
 // instead of UserDefT(int);
@@ -241,13 +256,15 @@ void IsOdd(
 
 ??? should still work
 Users will get errors if they tried to use IsOdd through a function pointer:
+
 ```cpp
 using IsOddFuncT =
   void (*)(int, bool, float);
 IsOddFuncT func = &IsOdd;
 ```
 
-The new constructor might unknowningly be used instead.
+The new constructor might unknowingly be used instead.
+
 ```cpp
 // calls UserDefT(bool);
 // instead of UserDefT(int);
@@ -261,12 +278,12 @@ UserDefT(1);
 </table>
 
 
-  
-  
-  
-  
-  
-  
+
+
+
+
+
+
 ## Renames
 -------------------------------------------------------------------------
 
@@ -584,7 +601,7 @@ Strangely, none.
   <td> Add Y::fun(Y::X) </td>
 
   <td>
-  
+
 ```cpp
 namespace Y
 {
@@ -637,7 +654,9 @@ namespace User
   </td> 
   <td>
 
-Due to ADL (Argument Dependant Lookup, aka if your type X is in namespace Y, when calling fun(X), fun will be looked up by the compiler in the namespace Y first.), if you add a method in your namespace, the user might now call this method instead of theirs.
+Due to ADL (Argument Dependant Lookup, aka if your type X is in namespace Y, when calling fun(X), fun will be looked up
+by the compiler in the namespace Y first.), if you add a method in your namespace, the user might now call this method
+instead of theirs.
 
   </td>
 
@@ -648,7 +667,7 @@ Due to ADL (Argument Dependant Lookup, aka if your type X is in namespace Y, whe
 
 # Todo
 
-- Add tests to ensure no breakings on user side
+- Add tests to ensure no breakings for dynamic libraries. (Hint: ODR + static members)
 - Add items to list:
     - Change enum to enum class
     - Add parameters to a function
