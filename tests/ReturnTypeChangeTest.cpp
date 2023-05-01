@@ -2,15 +2,15 @@
 #include "gtest/gtest.h"
 
 TEST(ReturnTypeChange, BasicAssertions) {
-    ASSERT_TRUE(FailingMethod(false));
-    ASSERT_TRUE(FailingMethod(false) ? true : false);
-    ASSERT_EQ(FailingMethod(false), true);
-    ASSERT_EQ(FailingMethod(true), false);
+    ASSERT_TRUE(FailingMethod(true));
+    ASSERT_TRUE(FailingMethod(true) ? true : false);
+    ASSERT_EQ(FailingMethod(true), true);
+    ASSERT_EQ(FailingMethod(false), false);
 
-    const bool succ = FailingMethod(false);
+    const bool succ = FailingMethod(true);
     ASSERT_TRUE(succ);
 
-    const bool fail = FailingMethod(true);
+    const bool fail = FailingMethod(false);
     ASSERT_TRUE(!fail);
 
     {
