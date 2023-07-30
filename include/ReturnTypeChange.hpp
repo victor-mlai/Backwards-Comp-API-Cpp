@@ -11,8 +11,8 @@
 // Todo: make this method return an error message when it fails.
 
 /// This method returns true if it succeeds, otherwise false.
-bool FailingMethod(bool shouldSucceed) {
-    if (!shouldSucceed)
+bool SomeMethod(bool returnSuccess) {
+    if (!returnSuccess)
         return false;
 
     return true;
@@ -27,8 +27,8 @@ struct FailingMethodResult {
 };
 
 /// This method now returns an error message when it fails.
-FailingMethodResult FailingMethod(bool shouldSucceed) {
-    if (!shouldSucceed)
+FailingMethodResult SomeMethod(bool returnSuccess) {
+    if (!returnSuccess)
         return {"shouldSucceed was false"};
 
     return {};
