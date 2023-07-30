@@ -6,7 +6,7 @@ namespace path::to::v1 {
     struct Bar {};
     constexpr int VAL = 42;
     enum SomeEnum { A, B, C };
-    void f(const Bar& val = Bar()) {
+    void Fun(const Bar& val = Bar()) {
         (void)val;
     }
 }  // namespace path::to::v1
@@ -16,7 +16,7 @@ namespace path::to::v2 {
     struct Bar {};
     constexpr int VAL = 42;
     enum SomeEnum { A, B, C };
-    void f(const Bar& val = Bar()) {
+    void Fun(const Bar& val = Bar()) {
         (void)val;
     }
 }  // namespace path::to::v2

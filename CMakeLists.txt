@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.14)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 option(OLD_CODE_ENABLED "If checked, you will build the old version." ON)
+message("INFO: OLD_CODE_ENABLED " ${OLD_CODE_ENABLED})
 
 project(
     bcAPI

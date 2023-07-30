@@ -9,9 +9,8 @@ foreach(test_file ${test_files})
     if(NOT OLD_CODE_ENABLED)
         compile_fail(${target_name} "${test_file}")
     else()
-        #compile_succeeds
+        # else, check that compile succeeds
         my_add_test(${target_name} "${test_file}")
-        target_compile_definitions(${target_name} PRIVATE "OLD_CODE_ENABLED")
     endif()
     target_link_libraries(${target_name} PRIVATE some_unstable_lib)
 endforeach()

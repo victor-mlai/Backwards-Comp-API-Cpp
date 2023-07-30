@@ -1,30 +1,15 @@
 #include "MethodDefaultParams.hpp"
 #include "gtest/gtest.h"
 
-void f(const InitName& val = InitName()) {
-    (void)val;
-}
-
-struct UserDerived : InitName {
-    UserDerived() : InitName() {}
-};
-
 TEST(StructRename, BasicAssertions) {
-    InitName obj;
-    obj = InitName{};
+    SomeMethod(7);
+    SomeMethod(7, true);
+    SomeMethod(7, false, 1e-4f);
 
-    InitName obj2(obj);
-    InitName obj3 = std::move(obj2);
-
-    static_assert(sizeof(obj) == 1);
-    static_assert(sizeof(obj2) == 1);
-
-    f(obj3);
-    f();
-
-    UserDerived usd{};
-    f(usd);
-
-    InitName sliced = usd;
-    f(sliced);
+    // Test that the new method also works
+#ifndef OLD_CODE_ENABLED
+    SomeMethod(7, SomeMethodOpts{true});
+    SomeMethod(7, SomeMethodOpts{.opt2 = 1e-4f});
+    SomeMethod(7, SomeMethodOpts{.opt1 = true, .opt2 = 1e-4f});
+#endif
 }

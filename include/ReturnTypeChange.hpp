@@ -3,7 +3,7 @@
 #include <string>
 #include <utility>
 
-// ----- `bool` -> `optional` -----
+// ----- `bool` changed to `optional` -----
 
 #ifdef OLD_CODE_ENABLED
 // Sometimes the user might want to know why a function fails,
@@ -36,7 +36,7 @@ FailingMethodResult SomeMethod(bool returnSuccess) {
 #endif
 
 
-//------ `const float&` -> `float` -----------
+//------ `const float&` changed to `float` -----------
 
 #ifdef OLD_CODE_ENABLED
 // Returning primitive types as const& is bad practice.
@@ -51,7 +51,7 @@ private:
     float m_memF = 3.f;
 };
 #else
-// Solution: same as before but with 1 addition
+// Solution: same as before but with 1 extra cast operator
 struct GetterRetT {
     using NewRetT = float;
     using OldRetT = const float&;
@@ -60,7 +60,7 @@ struct GetterRetT {
 
     template <int = 0>  // Tells the compiler to prefer the other overload when:
     // conversion from 'GetterRetT' to 'float' is ambiguous
-    //[[deprecated]] // deprecation message says:
+    //[[deprecated]] // deprecation message will say:
     // 'operator const float &' has been explicitly marked deprecated here
     operator OldRetT() const {
         return m_newVal;

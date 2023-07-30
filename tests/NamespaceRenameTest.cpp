@@ -1,25 +1,32 @@
 #include "NamespaceRename.hpp"
 #include "gtest/gtest.h"
 
-using namespace path::to::v1;
+namespace v1_alias = path::to::v1;
 
-void g(SomeEnum val = A) {
+void Fun(path::to::v1::SomeEnum val = path::to::v1::A) {
     (void)val;
+}
+
+void Foo(v1_alias::SomeEnum val = v1_alias::A) {
+    ::Fun(val);
 }
 
 TEST(NamespaceRename, Basic) {
     path::to::v1::Bar obj;
-    obj = Bar{};
-
-    path::to::v1::Bar obj2(obj);
-    Bar obj3 = std::move(obj2);
+    obj = v1_alias::Bar{};
 
     static_assert(sizeof(obj) == 1);
-    static_assert(sizeof(obj2) == 1);
+    Fun(obj);
+    path::to::v1::Fun();
 
-    f(obj3);
-    f();
+    Foo();
+    ::Fun(path::to::v1::B);
 
-    g();
-    g(path::to::v1::B);
+    // Test that the new method also works
+#ifndef OLD_CODE_ENABLED
+    path::to::v2::Bar obj_v2;
+    obj_v2 = v1_alias::Bar{};
+    path::to::v2::Fun(obj_v2);
+    ::Fun(path::to::v2::B);
+#endif
 }

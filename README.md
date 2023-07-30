@@ -5,12 +5,14 @@ like to do to your public API together with tricks on making
 these changes as non-breaking/backwards compatible,
 and as boilerplate free as possible.
 
+
 # Contributing
 
 This project just got created.
 
 Please feel free to create Issues and Pull Requests
 in case you find this list incomplete.
+
 
 ## Project structure
 
@@ -25,23 +27,31 @@ after the API change. (Should not depend on the macro OLD_CODE_ENABLED)
 /neg-tests contains code that should not compile after the API change.
 (Should not depend on the macro OLD_CODE_ENABLED)
 
-# Scenarios
+
+# Notice
 
 Most of the following changes will break:
+* ABI
 * function pointer aliases
-* virtual methods in user's class that overrides the lib's base class methods.
+* forward declarations
+* virtual methods in user's derived class that override the lib's base class virtual methods.
 
-So they will not be mentioned.
+
+# Summary
 
 * Renames:
-  [Rename a namespace](#mv-namespace)
+  * [Rename a namespace](#mv-namespace)
+  * [Rename a type](#mv-type)
+  * [Move a header](#mv-header)
 * Misc:
-  [Change Method Default Parameters](#change_defaults)
+  * [Change Method Default Parameters](#change_defaults)
+  * [Changing the return type (or "overloading" by return type)](#change_ret_type)
+  * [Move types/symbols to a different namespace](#move_symb_to_ns)
+  * [Move types/symbols to a different class](#move_symb_to_class)
+* [Reasonably safe changes](#reasonably_safe_changes)
+* [ToDo]
 
-
-
-
-## <a name="mv-namespace"/> <span style="color:yellow">Rename a namespace</span>
+## <a name="mv-namespace"/> Rename a namespace
 
 **Scenario:** We need to update the namespace name to be more descriptive, more generic, or more specific.
 
@@ -69,11 +79,9 @@ You can try compiler specific directives (Eg. `#pragma deprecated(keyword)` on m
 
 The alias should preferably be at the top of the file (this is why the empty namespace `namespace path::to::v2 {}` was added)
 
+**Files:** 
 
-
-
-
-## <a name="change_defaults"/> <span style="color:yellow">Change method taking default parameters to taking struct</span>
+## <a name="change_defaults"/> Change method taking default parameters to taking struct
 
 **Scenario:** Your method receives too many default parameters now and it gets
 harder for users to call it with only 1 or 2 parameters changed. We still need
@@ -86,7 +94,7 @@ void SomeMethod(
     const int mandatory,
     const bool opt1 = false,
     const float opt2 = 1e-6
-) {...}
+) { ... }
 ```
 
 **Request:** Change the method to receive a struct containing these parameters.
@@ -98,11 +106,10 @@ one we need to make the old one less specialized by making it a template.
 
 ```diff
 + template<int = 0>
-= void SomeMethod(
-=     const int mandatory,
-=     const bool opt1 = false,
-=     const float opt2 = 1e-6
-<=> ) { ... }
+void SomeMethod(
+    const int mandatory,
+    const bool opt1 = false,
+    const float opt2 = 1e-6
 + ) {
 +  // Calls the new implementation now
 +  SomeMethod(mandatory, SomeMethodOpts{opt1, opt2});
@@ -112,15 +119,14 @@ one we need to make the old one less specialized by making it a template.
 + void SomeMethod(
 +     const int mandatory,
 +     SomeMethodOpts opts = {}
-<=> ) { ... }
+) { ... }
 ```
 
 **Remarks:** You can deprecate the old `SomeMethod`
 
 
 
-
-## <a name="change_defaults"/> <span style="color:yellow">Rename a type</span>
+## <a name="mv-type"/> Rename a type
 
 **Scenario:** We need to update the struct name to be more descriptive, more generic, or more specific.
 
@@ -145,9 +151,7 @@ struct OldName { ... };
 
 
 
-
-
-## <a name="change_defaults"/> <span style="color:yellow">Move a header</span>
+## <a name="mv-header"/> Move a header
 
 **Scenario:** We need to move/rename a header.
 
@@ -176,8 +180,7 @@ struct OldName { ... };
 
 
 
-
-## <a name="change_defaults"/> <span style="color:yellow">Changing the return type (or "overloading" by return type)</span>
+## <a name="change_ret_type"/> Changing the return type (or "overloading" by return type)
 
 **Scenario:** 
 
@@ -211,8 +214,7 @@ See [ReturnTypeChange](include/ReturnTypeChange.hpp)
 
 
 
-
-## <a name="change_defaults"/> <span style="color:yellow">TODO: Move types/symbols to a different namespace</span>
+## <a name="change_defaults"/> TODO: Move types/symbols to a different namespace
 
 ```cpp
 // Todo: move some to v2
@@ -249,7 +251,7 @@ namespace path::to::v1 {
 
 
 
-## <a name="change_defaults"/> <span style="color:yellow">TODO: Move types/symbols to a different class</span>
+## <a name="change_defaults"/> TODO: Move types/symbols to a different class
 
 ```cpp
 // Todo: move these to NewClass
@@ -285,149 +287,102 @@ struct OldClass {
 
 
 
-
-
-
-## Other reasonably safe changes:
+## <a name="reasonably_safe_changes"/> Reasonably safe changes:
 * removing the `const` when returning by value: `const RetT some_func()`
-* transforming a class with only static methods to a namespace
+* convert a class with only static methods to a namespace
+* if your non-static method doesn't use `this`, convert it to a static one (`obj.SomeMethod(..)` will still work)
 * changing the underlying type of an enum
-* TODO: removing the `&` when returning by `const &`
-
-
-
-
-
-
-
 
 
 
 ## Quirks
 
-<table>
-<tr>
-  <td> Change Description </td>
-  <td> Initial code + change </td>
-  <td> Solution </td>
-  <td> Drawbacks </td>
-</tr>
+### Change the underlying type of an unscoped enum </td>
 
-
-<tr>
-  <td> Change the underlying type of an unscoped enum </td>
-
-  <td>
-
-When working with bitfields,
-we might end up in the situation where we
-want to add D > C however we are at the limit.
+**Scenario:** When using enums to work with bitfields,
+we might not think ahead and end up in a situation where we
+want to add a new enum value D after C however we are at the
+limit of the underlying type, `int`.
 
 ```cpp
-// Todo: change to std::uint64_t
 enum SomeEnum {
   ...,
-  C = 0xFFFF'FFFF
+  B = 1 << 30,
+  C = 1 << 31,
+  // D = 1 << 32, UB or a warning/error
 };
 ```
-
-  </td>
-
-  <td>
-
+->
 ```cpp
 enum SomeEnum : std::uint64_t {
   ...,
-  C = 0xFFFF'FFFF,
-  D = 0x1'0000'0000
+  B = 1 << 30,
+  C = 1 << 31,
+  D = 1ull << 32,
 };
 ```
 
-This is already backwards-compatible, because
-the following code does not give any underflow warnings
-(which would have been a breaking change
-when compiled with "Treat Warnings as Errors").
+**Remarks:**
+This is already backwards-compatible, because the following code does not
+give any underflow warnings.
 
 ```cpp
 unsigned x = SomeEnum::C;
 ```
 
-  </td> 
-  <td>
+### Library breaks user code by adding a method in their own namespace
 
-Strangely, none.
-
-  </td> 
-
-</tr>
-
-<tr>
-  <td> Add Y::fun(Y::X) </td>
-
-  <td>
+**Scenario:** Library wants to add a new method in their own namespace but
+which takes as input an object from their own namespace.
 
 ```cpp
-namespace Y
+// Lib/SomeHeader.hpp
+namespace Lib
 {
- struct X {..};
- // TODO: add fun
+    struct X {..};
 }
 
-...
-
-// user already has fun
-// in their namespace
+// UserCode/Core.hpp
+// Coincidentally, user already has a Foo in their namespace
 namespace User
 {
-  void fun(Y::X);
+    void Foo(const Y::X&);
 }
 
-// Their code:
+// UserCode/Core.cpp
 namespace User
 {
-  void SomeFun() {
-    Y::X x;
-    fun(x); // calls User::fun
-  }
+    void SomeFun() {
+        Lib::X x;
+        Foo(x); // calls User::Foo
+    }
 }
 ```
 
-  </td>
-
-  <td>
-
-```cpp
-namespace Y
+```diff
+// Lib/SomeHeader.hpp
+namespace Lib
 {
- struct X {..};
- // adding this changed
- // user's code
- void fun(Y::X);
+    struct X {..};
+
++    void Foo(const X&);
 }
-...
-// Their code:
+
+// UserCode/Core.cpp
 namespace User
 {
-  void SomeFun() {
-    Y::X x;
-    fun(x); // now calls Y::fun
-  }
+    void SomeFun() {
+        Lib::X x;
+-        Foo(x); // calls User::Foo
++        Foo(x); // now calls Lib::Foo
+    }
 }
 ```
 
-  </td> 
-  <td>
-
-Due to ADL (Argument Dependant Lookup, aka if your type X is in namespace Y, when calling fun(X), fun will be looked up
-by the compiler in the namespace Y first.), if you add a method in your namespace, the user might now call this method
+Due to ADL (Argument Dependant Lookup - if your type X is in namespace Lib, when calling Foo(X), Foo will be looked up
+by the compiler in the namespace Lib first), if you add a method in your namespace, the user might now call this method
 instead of theirs.
 
-  </td>
-
-</tr>
-
-
-</table>
 
 # Todo
 

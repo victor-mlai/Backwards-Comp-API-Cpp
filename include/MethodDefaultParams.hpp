@@ -7,7 +7,6 @@
         const bool opt1 = false,
         const float opt2 = 1e-6
     ) {}
-
 #else
     // Solution: If you just add the new SomeMethod, calling SomeMethod with
     // just the mandatory parameters becomes ambiguous. The compiler won't
@@ -17,10 +16,10 @@
     void SomeMethod(
         const int mandatory,
         const bool opt1 = false,
-        const float opt2 = 1e-6
+        const float opt2 = 1e-6f
     ) {}
 
-    struct SomeMethodOpts { bool opt1 = false; float opt2 = 1e-6; };
+    struct SomeMethodOpts { bool opt1 = false; float opt2 = 1e-6f; };
     void SomeMethod(
         const int mandatory,
         SomeMethodOpts opts = {}
