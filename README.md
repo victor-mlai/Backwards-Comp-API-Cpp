@@ -16,25 +16,29 @@ in case you find this list incomplete.
 
 ## Project structure
 
-/include contains the "unstable" library which contains both the old and the
-new API, depending on OLD_CODE_ENABLED.
+/include represents the "unstable" library which contains both the old and the
+new API. The macro OLD_CODE_ENABLED controls whether the code is before or after the API change.
 
-The macro OLD_CODE_ENABLED controls whether the code before or after the API change.
+/tests represents the users of the library whose code must compile
+after the API change.
 
-/tests represents the users of the library, and all their code must compile
-after the API change. (Should not depend on the macro OLD_CODE_ENABLED)
+/neg-tests contains code that will not compile after the API change.
+One API change can lead to multiple types of compile errors.
+Each of these errors must be isolated in a single file.
+Please follow this format: `<FileName_ErrorExpected_NegTest.cpp>`
 
-/neg-tests contains code that should not compile after the API change.
-(Should not depend on the macro OLD_CODE_ENABLED)
 
+# !! Notice
 
-# Notice
-
-Most of the following changes will break:
+Most of the changes in this list will break:
 * ABI
 * function pointer aliases
 * forward declarations
-* virtual methods in user's derived class that override the lib's base class virtual methods.
+
+Some of these changes should not be done to:
+* virtual methods (Eg. removing `const` when returning by value will break user's code if they override this method)
+
+(I assume these are not a concern for your library)
 
 
 # Summary
