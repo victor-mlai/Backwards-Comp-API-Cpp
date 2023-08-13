@@ -2,32 +2,36 @@
 #include "gtest/gtest.h"
 
 TEST(ReturnTypeChange, BasicAssertions) {
-    // Testing calls to SomeMethod
+    // ----- primitive `T` changed to `NewUserDefT` -----
+    // Testing calls to TryFoo
     {
-        ASSERT_TRUE(SomeMethod(true));
-        ASSERT_TRUE(SomeMethod(true) ? true : false);
-        ASSERT_EQ(SomeMethod(true), true);
-        ASSERT_EQ(SomeMethod(false), false);
+        ASSERT_FALSE(TryFoo(false));
+        ASSERT_TRUE(TryFoo(true) ? true : false);
 
-        const bool succ = SomeMethod(true);
+        const bool succ = TryFoo(true);
         ASSERT_TRUE(succ);
 
-        const bool fail = SomeMethod(false);
-        ASSERT_TRUE(!fail);
+        // Test that the new return type works
+#ifndef OLD_CODE_ENABLED
+        TryFooResult res = TryFoo(false);
+        ASSERT_TRUE(res.m_errMsg.has_value());
+
+        auto res_auto = TryFoo(false);
+        ASSERT_FALSE(res_auto); // using the implicit cast
+#endif
     }
 
+    //------ primitive `const T&` changed to primitive `T` -----------
     // Testing calls of a mutable object
     {
         Strukt s_mut;
         int iVal = static_cast<int>(s_mut.GetMemF());
         float val = s_mut.GetMemF();
         s_mut.SetMemF(s_mut.GetMemF());
-        float& valRef = s_mut.GetMemF();
         const float& constValRef = s_mut.GetMemF();
 
         ASSERT_EQ(iVal, 3);
         ASSERT_FLOAT_EQ(val, 3.f);
-        ASSERT_FLOAT_EQ(valRef, 3.f);
         ASSERT_FLOAT_EQ(constValRef, 3.f);
     }
 

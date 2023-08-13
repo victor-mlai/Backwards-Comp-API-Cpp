@@ -1,12 +1,12 @@
 #pragma once
 
 #ifdef OLD_CODE_ENABLED
-// Todo: rename InitName to FinalName
-struct InitName {};
+// Change: rename OldName to NewName
+struct OldName {};
 #else
 // simply rename
-struct FinalName {};
+struct NewName {};
 
 // then add this type alias
-using InitName = FinalName;
+using OldName = NewName;
 #endif

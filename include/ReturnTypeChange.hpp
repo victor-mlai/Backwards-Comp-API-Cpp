@@ -3,15 +3,13 @@
 #include <string>
 #include <utility>
 
-// ----- `bool` changed to `optional` -----
+// ----- primitive `T` changed to `NewUserDefT` -----
 
 #ifdef OLD_CODE_ENABLED
-// Sometimes the user might want to know why a function fails,
-// but without having to catch exceptions.
-// Todo: make this method return an error message when it fails.
-
-/// This method returns true if it succeeds, otherwise false.
-bool SomeMethod(bool returnSuccess) {
+// This method returns true if it succeeds, otherwise false.
+// Change: Make this method return some error message as well
+//  so the user knows why it failed (returned false)
+bool TryFoo(bool returnSuccess) {
     if (!returnSuccess)
         return false;
 
@@ -19,7 +17,7 @@ bool SomeMethod(bool returnSuccess) {
 }
 #else
 // Solution: return a new type that can be implicitly converted to bool.
-struct FailingMethodResult {
+struct TryFooResult {
     // can be deprecated, to let the users know FailingMethod can return a message now.
     operator bool() const { return !m_errMsg.has_value(); }
 
@@ -27,7 +25,7 @@ struct FailingMethodResult {
 };
 
 /// This method now returns an error message when it fails.
-FailingMethodResult SomeMethod(bool returnSuccess) {
+TryFooResult TryFoo(bool returnSuccess) {
     if (!returnSuccess)
         return {"shouldSucceed was false"};
 
@@ -36,14 +34,12 @@ FailingMethodResult SomeMethod(bool returnSuccess) {
 #endif
 
 
-//------ `const float&` changed to `float` -----------
+//------ primitive `const T&` changed to primitive `T` -----------
 
 #ifdef OLD_CODE_ENABLED
-// Returning primitive types as const& is bad practice.
+// Change: Returning primitive types as const& is bad practice so change `const float&` to just `float`
 // But, we cannot overload a function by return type and then deprecate it.
-// Todo: change `const float&` to just `float`
 struct Strukt {
-    float& GetMemF() { return m_memF; }
     const float& GetMemF() const { return m_memF; }
     void SetMemF(const float& memF) { m_memF = memF; }
 
@@ -52,7 +48,9 @@ private:
 };
 #else
 // Solution: same as before but with 1 extra cast operator
-struct GetterRetT {
+struct //[[deprecated("Store a NewRetT instead")]] - so users don't just `auto x = TryFoo();`
+    GetterRetT
+{
     using NewRetT = float;
     using OldRetT = const float&;
 
@@ -72,7 +70,6 @@ struct GetterRetT {
 };
 
 struct Strukt {
-    float& GetMemF() { return m_memF.m_newVal; }
     // return this by const& to avoid dangling references from StruktWrapper's Getter
     const GetterRetT& GetMemF() const { return m_memF; }
     void SetMemF(const float& memF) { m_memF.m_newVal = memF; }

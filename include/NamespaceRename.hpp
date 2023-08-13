@@ -11,7 +11,15 @@ namespace path::to::v1 {
     }
 }  // namespace path::to::v1
 #else
-// simply rename
+// Add these on top for better visibility
+namespace path::to::v2 {}
+
+// Add a namespace alias
+namespace path::to {
+    namespace v1 = path::to::v2;
+}
+
+// Then simply rename
 namespace path::to::v2 {
     struct Bar {};
     constexpr int VAL = 42;
@@ -20,9 +28,4 @@ namespace path::to::v2 {
         (void)val;
     }
 }  // namespace path::to::v2
-
-// then add a namespace alias
-namespace path::to {
-    namespace v1 = path::to::v2;
-}
 #endif

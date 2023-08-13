@@ -1,20 +1,20 @@
 #include "StructRename.hpp"
 #include "gtest/gtest.h"
 
-void f(const InitName& val = InitName()) {
+void f(const OldName& val = OldName()) {
     (void)val;
 }
 
-struct UserDerived : InitName {
-    UserDerived() : InitName() {}
+struct Derived : OldName {
+    Derived() : OldName() {}
 };
 
 TEST(StructRename, BasicAssertions) {
-    InitName obj;
-    obj = InitName{};
+    OldName obj;
+    obj = OldName{};
 
-    InitName obj2(obj);
-    InitName obj3 = std::move(obj2);
+    OldName obj2(obj);
+    OldName obj3 = std::move(obj2);
 
     static_assert(sizeof(obj) == 1);
     static_assert(sizeof(obj2) == 1);
@@ -22,9 +22,17 @@ TEST(StructRename, BasicAssertions) {
     f(obj3);
     f();
 
-    UserDerived usd{};
-    f(usd);
+    Derived d{};
+    f(d);
 
-    InitName sliced = usd;
+    OldName sliced = d;
     f(sliced);
+
+    // Test that the new struct name works
+#ifndef OLD_CODE_ENABLED
+    NewName newObj;
+    newObj = NewName{};
+    f(Derived());
+    static_assert(sizeof(newObj) == 1);
+#endif
 }

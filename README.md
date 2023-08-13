@@ -16,16 +16,16 @@ in case you find this list incomplete.
 
 ## Project structure
 
-/include represents the "unstable" library which contains both the old and the
+include/ represents the "unstable" library which contains both the old and the
 new API. The macro OLD_CODE_ENABLED controls whether the code is before or after the API change.
 
-/tests represents the users of the library whose code must compile
-after the API change.
+tests/ represents the users of the library whose code must compile
+after the API change. Please follow this format: `<FileNameTest.cpp>`
 
-/neg-tests contains code that will not compile after the API change.
+neg-tests/ contains code that will not compile after the API change.
 One API change can lead to multiple types of compile errors.
 Each of these errors must be isolated in a single file.
-Please follow this format: `<FileName_ErrorExpected_NegTest.cpp>`
+Please follow this format: `<FileName_ErrorExpected.cpp>`
 
 
 # !! Notice
@@ -50,9 +50,10 @@ Some of these changes should not be done to:
 * Misc:
   * [Change Method Default Parameters](#change_defaults)
   * [Changing the return type (or "overloading" by return type)](#change_ret_type)
-  * [Move types/symbols to a different namespace](#move_symb_to_ns)
-  * [Move types/symbols to a different class](#move_symb_to_class)
+  * [TODO: Move types/symbols to a different namespace](#move_symb_to_ns)
+  * [TODO: Move types/symbols to a different class](#move_symb_to_class)
 * [Reasonably safe changes](#reasonably_safe_changes)
+* [Quirks](#quirks)
 * [ToDo]
 
 ## <a name="mv-namespace"/> Rename a namespace
@@ -115,7 +116,7 @@ void SomeMethod(
     const bool opt1 = false,
     const float opt2 = 1e-6
 + ) {
-+  // Calls the new implementation now
++  // Call the new implementation now
 +  SomeMethod(mandatory, SomeMethodOpts{opt1, opt2});
 + }
 + 
@@ -186,39 +187,73 @@ struct OldName { ... };
 
 ## <a name="change_ret_type"/> Changing the return type (or "overloading" by return type)
 
-**Scenario:** 
+**Scenario:** `TryFoo` method returns true if it succeeds, otherwise false.
+Make this method return some error message as well so the user knows why it failed (returned false).
+
+Returning primitive types as const& is bad practice so change the `Strukt::GetMemF`
+return type from `const float&` to just `float`.
+However, we cannot just overload a function by return type and then deprecate it.
 
 **Initial code:**
 ```cpp
-OldRetT SomeMethod();
+// ----- primitive `T` changed to `NewUserDefT` -----
+bool TryFoo();
+
+//------ primitive `const T&` changed to primitive `T` -----------
+struct Strukt {
+    const float& GetMemF() const { return m_memF; }
+};
 ```
 
-**Request:** return `NewRetT` instead
+**Request:**
+* change return type of `TryFoo` from primitive `bool` to `TryFooResult`
+* change return type of `GetMemF` from primitive `const float&` to `float`
 
-**Solution:** Add a new class with an implicit cast operator to `NewRetT` and `OldRetT`.
+**Solution:**
+* return a new type that can be implicitly converted to bool.
+* Add a new class with an implicit cast operator to `NewRetT` and `OldRetT`.
+  (1) Additionally, if the compiler can't decide between the 2 cast operators at overload resolution,
+templating the old one makes it choose the new overload candidate since it's more specialized.
+  (2) Return GetterRetT by const& to avoid dangling references in user's methods that still only 
+forward the old `const float&`
 
 ```diff
+// ----- primitive `T` changed to `NewUserDefT` -----
++ struct TryFooResult {
++     operator bool() const { return !m_errMsg.has_value(); }
++ 
++     std::optional<std::string> m_errMsg;
++ };
+- bool TryFoo();
++ TryFooResult TryFoo();
+
+//------ primitive `const T&` changed to primitive `T` -----------
 + struct SomeMethodRetT {
-+   template <int = 0> // If the conversion is ambigous, templating makes this method a worser overload candidate.
++   template <int = 0> // (1)
 +   operator OldRetT () const { ... }
 +   operator NewRetT () const { ... }
 + };
-- OldRetT SomeMethod();
-+ SomeMethodRetT SomeMethod();
+struct Strukt {
+-   const float& GetMemF() const { return m_memF; }
+-   float m_memF = 3.f;
++   // (2)
++   const GetterRetT& GetMemF() const { return m_memF; }
++   GetterRetT m_memF = 3.f;
+};
 ```
 
 **Remarks:** The implicit cast may happen in unintended scenarios.
-Also, you might want to deprecate the `OldRetT` cast operator.
+Also, you might want to deprecate the `OldRetT` cast operator and the `GetterRetT` type.
 
-**Errors:**
+**Errors:** **TODO** double check this:
 If `OldRetT` was a `const T&` and `NewRetT` is just `T` and if the user had
 a method that was just forwarding the returned value, now they will get a
-compiler error caused by trying to return a reference to a temporary object.
+compiler error caused by trying to return a dangling reference to a temporary object.
 See [ReturnTypeChange](include/ReturnTypeChange.hpp)
 
 
 
-## <a name="change_defaults"/> TODO: Move types/symbols to a different namespace
+## <a name="move_symb_to_ns"/> TODO: Move types/symbols to a different namespace
 
 ```cpp
 // Todo: move some to v2
@@ -255,14 +290,15 @@ namespace path::to::v1 {
 
 
 
-## <a name="change_defaults"/> TODO: Move types/symbols to a different class
+## <a name="move_symb_to_class"/> TODO: Move types/symbols to a different class
 
 ```cpp
-// Todo: move these to NewClass
+// Change: move these to NewClass
 struct OldClass {
   struct Bar {};
   constexpr int VAL = 42;
   enum SomeEnum { A, B, C };
+  bool Foo() { return true; }
 }
 ```
 
@@ -273,9 +309,10 @@ struct NewClass {
   struct Bar {};
   static constexpr int VAL = 42;
   enum SomeEnum { A, B, C };
+  bool Foo() { return true; }
 }
 
-// then add these in the old class
+// In short, the old class should depend on the new one so you can add these:
 struct OldClass {
   using Bar = NewClass::Bar;
   static constexpr int VAL = NewClass::VAL;
@@ -284,6 +321,10 @@ struct OldClass {
   static constexpr SomeEnum A = NewClass::A;
   static constexpr SomeEnum B = NewClass::B;
   static constexpr SomeEnum C = NewClass::C;
+  
+  bool Foo() { return m_newCls.Foo(); }
+private:
+  NewClass m_newCls;
 }
 ```
 
@@ -299,24 +340,26 @@ struct OldClass {
 
 
 
-## Quirks
+## <a name="quirks"/> Quirks
 
-### Change the underlying type of an unscoped enum </td>
+### "Widening" the underlying type of an unscoped enum
+
+**Todo** add tests
 
 **Scenario:** When using enums to work with bitfields,
 we might not think ahead and end up in a situation where we
 want to add a new enum value D after C however we are at the
-limit of the underlying type, `int`.
+limit of the default underlying type, i.e. `int`.
 
 ```cpp
 enum SomeEnum {
   ...,
   B = 1 << 30,
   C = 1 << 31,
-  // D = 1 << 32, UB or a warning/error
+  // D = 1 << 32, UB or a warning/error when uncommented
 };
 ```
-->
+Change to
 ```cpp
 enum SomeEnum : std::uint64_t {
   ...,
@@ -330,11 +373,14 @@ enum SomeEnum : std::uint64_t {
 This is already backwards-compatible, because the following code does not
 give any underflow warnings.
 
+
 ```cpp
 unsigned x = SomeEnum::C;
 ```
 
 ### Library breaks user code by adding a method in their own namespace
+
+**Todo** showcase with a negative test
 
 **Scenario:** Library wants to add a new method in their own namespace but
 which takes as input an object from their own namespace.
