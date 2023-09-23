@@ -56,7 +56,8 @@ Some of these changes should not be done to:
 * [Quirks](#quirks)
 * [ToDo]
 
-## <a name="mv-namespace"/> Rename a namespace
+<details>
+  <summary>Rename a namespace</summary>
 
 **Scenario:** We need to update the namespace name to be more descriptive, more generic, or more specific.
 
@@ -85,8 +86,11 @@ You can try compiler specific directives (Eg. `#pragma deprecated(keyword)` on m
 The alias should preferably be at the top of the file (this is why the empty namespace `namespace path::to::v2 {}` was added)
 
 **Files:** 
+</details>
 
-## <a name="change_defaults"/> Change method taking default parameters to taking struct
+
+<details>
+  <summary>Change method taking default parameters to taking struct</summary>
 
 **Scenario:** Your method receives too many default parameters now and it gets
 harder for users to call it with only 1 or 2 parameters changed. We still need
@@ -129,6 +133,7 @@ void SomeMethod(
 
 **Remarks:** You can deprecate the old `SomeMethod`
 
+</details>
 
 
 ## <a name="mv-type"/> Rename a type

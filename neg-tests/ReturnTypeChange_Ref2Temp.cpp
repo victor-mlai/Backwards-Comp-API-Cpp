@@ -2,8 +2,8 @@
 #include "gtest/gtest.h"
 
 struct StruktWrapper {
-    // if Get return type is changed to return by value, then this method
-    //  would end up returning a reference to a temporary => compile error
+    // if the return type of Strukt::GetMemF is changed to return by value,
+    // then this method would end up returning a reference to a temporary
     const float& GetMemF() const { return m_s.GetMemF(); }
     void SetMemF(const float& memF) { m_s.SetMemF(memF); }
 
@@ -11,7 +11,7 @@ private:
     Strukt m_s{};
 };
 
-int main()
+TEST(ReturnTypeChange_Ref2Temp, StruktWrapper)
 {
     StruktWrapper s_mut;
     {
