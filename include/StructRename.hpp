@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef OLD_CODE_ENABLED
+#ifndef BC_API_CHANGED
 // Change: rename OldName to NewName
 struct OldName {};
 #else

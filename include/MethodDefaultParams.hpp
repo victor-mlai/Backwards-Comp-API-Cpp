@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef OLD_CODE_ENABLED
+#ifndef BC_API_CHANGED
     // Change: make this method receive a struct with the default parameters
     void SomeMethod(
         const int /*mandatory*/,

@@ -29,7 +29,7 @@ TEST(StructRename, BasicAssertions) {
     f(sliced);
 
     // Test that the new struct name works
-#ifndef OLD_CODE_ENABLED
+#ifdef BC_API_CHANGED
     NewName newObj;
     newObj = NewName{};
     f(Derived());

@@ -5,8 +5,6 @@ target_include_directories(some_unstable_lib
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>)
 
-target_compile_features(some_unstable_lib INTERFACE cxx_std_20)
-
-if (OLD_CODE_ENABLED)
-    target_compile_definitions(some_unstable_lib INTERFACE "OLD_CODE_ENABLED")
+if (BC_API_CHANGED)
+    target_compile_definitions(some_unstable_lib INTERFACE "BC_API_CHANGED")
 endif ()

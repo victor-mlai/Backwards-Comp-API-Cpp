@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef OLD_CODE_ENABLED
+#ifndef BC_API_CHANGED
 // rename v1 to v2
 namespace path::to::v1 {
     struct Bar {};

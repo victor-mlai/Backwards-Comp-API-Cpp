@@ -23,7 +23,7 @@ TEST(NamespaceRename, Basic) {
     ::Fun(path::to::v1::B);
 
     // Test that the new method also works
-#ifndef OLD_CODE_ENABLED
+#ifdef BC_API_CHANGED
     path::to::v2::Bar obj_v2;
     obj_v2 = v1_alias::Bar{};
     path::to::v2::Fun(obj_v2);
