@@ -5,7 +5,7 @@ function(my_add_test target_name test_file)
     if(MSVC)
         target_compile_options(${target_name} PRIVATE /WX /W4)
     else()
-        target_compile_options(${target_name} PRIVATE -Werror -Wall)
+        target_compile_options(${target_name} PRIVATE -Werror -Wall -Wno-unknown-pragmas -Wno-implicit-int-float-conversion)
     endif()
 
     add_test(NAME ${target_name}

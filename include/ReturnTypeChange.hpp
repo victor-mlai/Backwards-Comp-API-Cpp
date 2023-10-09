@@ -13,7 +13,7 @@ bool TryParseString(std::string num) {
     if (num.empty())
         return false;
 
-    if (num[0] != "k")
+    if (num[0] != 'k')
         return false;
 
     return true;
