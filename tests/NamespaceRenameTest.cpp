@@ -3,13 +3,15 @@
 
 namespace v1_alias = path::to::v1;
 
-void Fun(path::to::v1::SomeEnum val = path::to::v1::A) {
-    (void)val;
-}
+namespace {
+    void Fun(path::to::v1::SomeEnum val = path::to::v1::A) {
+        (void)val;
+    }
 
-void Foo(v1_alias::SomeEnum val = v1_alias::A) {
-    ::Fun(val);
-}
+    void Foo(v1_alias::SomeEnum val = v1_alias::A) {
+        ::Fun(val);
+    }
+}  // namespace
 
 TEST(NamespaceRename, Basic) {
     path::to::v1::Bar obj;
@@ -22,11 +24,20 @@ TEST(NamespaceRename, Basic) {
     Foo();
     ::Fun(path::to::v1::B);
 
-    // Test that the new method also works
+    // Test that the new namespace also works
 #ifdef BC_API_CHANGED
     path::to::v2::Bar obj_v2;
     obj_v2 = v1_alias::Bar{};
     path::to::v2::Fun(obj_v2);
     ::Fun(path::to::v2::B);
 #endif
+}
+
+TEST(NamespaceRename, UsingNamespace) {
+    using namespace path::to::v1;
+
+    Bar obj;
+    obj = Bar{};
+    const SomeEnum x = A;
+    ::Fun(x);
 }
