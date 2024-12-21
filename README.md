@@ -23,7 +23,7 @@ forward declarations or function pointer aliases.
 The tests are run twice, with the macro BC_API_CHANGED OFF (before the API change)
 and ON (after).
 
-/include represents an "unstable" library which exports both the old API and the
+/some_unstable_lib represents a library which exports both the old API and the
 new (changed) API based on the macro BC_API_CHANGED.
 
 /tests represents the users of the library whose code must compile
@@ -89,7 +89,7 @@ file for visibility purposes
 
 **Files:**
 
-* API: [NamespaceRename.hpp](include/NamespaceRename.hpp)
+* API: [NamespaceRename.hpp](some_unstable_lib/include/NamespaceRename.hpp)
 * User: [NamespaceRenameTest.cpp](tests/NamespaceRenameTest.cpp)
 
 </details>
@@ -143,7 +143,7 @@ void SomeMethod(
 
 **Files:**
 
-* API: [MethodDefaultParams.hpp](include/MethodDefaultParams.hpp)
+* API: [MethodDefaultParams.hpp](some_unstable_lib/include/MethodDefaultParams.hpp)
 * User: [MethodDefaultParamsTest.cpp](tests/MethodDefaultParamsTest.cpp)
 
 </details>
@@ -177,7 +177,7 @@ We will change it to `NewName`.
 
 **Files:**
 
-* API: [StructRename.hpp](include/StructRename.hpp)
+* API: [StructRename.hpp](some_unstable_lib/include/StructRename.hpp)
 * User: [StructRenameTest.cpp](tests/StructRenameTest.cpp)
 
 </details>
@@ -223,15 +223,15 @@ blame history.
 
 
 <details>
-  <summary id="change_ret_type">Change the return type (or "overloading" by return type)</summary>
+  <summary id="change_ret_type">Change the return type (or "overload" by return type)</summary>
 
 **Initial code:**
 
 ```cpp
-// (1) change primitive `T` to `NewUserDefT`
+// (1) change some primitive `T` to `NewUserDefT`
 bool CheckPassword(std::string);
 
-// (2) change primitive `const T&` to primitive `T`
+// (2) change some primitive `const T&` to primitive `T`
 struct Strukt {
 const float& GetMemF() const {
 return m_memF; }
@@ -301,8 +301,10 @@ the `GetterRetT` type.
 
 **Files:**
 
-* API: [include/ReturnTypeChange.hpp](include/ReturnTypeChange.hpp)
+* API: [include/ReturnTypeChange.hpp](some_unstable_lib/include/ReturnTypeChange.hpp)
+  [include/ReturnTypeChangeByValue.hpp](some_unstable_lib/include/ReturnTypeChangeByValue.hpp)
 * User: [tests/ReturnTypeChangeTest.cpp](tests/ReturnTypeChangeTest.cpp)
+  [tests/ReturnTypeChangeByValueTest.hpp](tests/ReturnTypeChangeByValueTest.hpp)
 * Neg: [neg-tests/ReturnTypeChangeTest.cpp](neg-tests/ReturnTypeChangeTest.cpp)
 
 </details>
@@ -360,7 +362,7 @@ the return type for the bitwise operators should be `int`, otherwise `Handler`:
 
 **Files:**
 
-* API: [ChangeToEnumClass.hpp](include/ChangeToEnumClass.hpp)
+* API: [ChangeToEnumClass.hpp](some_unstable_lib/include/ChangeToEnumClass.hpp)
 * User: [ChangeToEnumClassTest.cpp](tests/ChangeToEnumClassTest.cpp)
 
 </details>

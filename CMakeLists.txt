@@ -6,7 +6,7 @@ message("INFO: BC_API_CHANGED " ${BC_API_CHANGED})
 
 project(
 	bcAPI
-	HOMEPAGE_URL "https://github.com/victorlaurentiu/Backwards-Comp-API-Cpp"
+	HOMEPAGE_URL "https://github.com/victor-mlai/Backwards-Comp-API-Cpp"
 	DESCRIPTION "Tricks in C++ for making API changes as non-breaking and boilerplate free as possible"
 	LANGUAGES CXX
 )
@@ -18,7 +18,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -std=c++20")
 endif()
 
-add_subdirectory(include)
+add_subdirectory(some_unstable_lib)
 
 
 enable_testing()
