@@ -6,7 +6,7 @@
 template <typename T>
 void Foo(T) requires std::is_same_v<T, float> {}
 
-TEST(ReturnTypeChangeByValue_Neg, Auto) {
+TEST(ReturnTypeChangeByValue_Neg, NoOverload) {
     Strukt obj;
 	
 	// After the API Change, x is of type `detail::GetterRetT`
