@@ -229,6 +229,9 @@
   </style>
 </head>
 <body>
+<title>
+BC API tricks
+</title>
 <h1 id="backwards-compatibility-tricks-for-api-changes-in-c">Backwards
 Compatibility tricks for API changes in C++</h1>
 <p>This project contains “tricks” on how to make API changes backwards
@@ -255,34 +258,33 @@ before and after the API change.</p>
 change. One file per each such case.</p>
 <p>All tests are run twice, with the macro BC_API_CHANGED OFF (before
 the API change) and ON (after).</p>
-<h1 id="overview">Overview</h1>
-<ul>
-<li><a href="#mv-namespace">Rename/Move a namespace</a></li>
-<li><a href="#change_defaults">Change method with default parameters to
-receive a struct with those parameters</a></li>
-<li><a href="#mv-type">Rename/Move a type</a></li>
-<li><a href="#mv-header">Rename/Move a header</a></li>
-<li><a href="#change_ret_type">Change the return type (or “overloading”
-by return type)</a></li>
-<li><a href="#reasonably_safe_changes">Reasonably safe changes</a> <!--
+<!--
+# Overview
+* [Rename/Move a namespace](#mv-namespace)
+* [Change method with default parameters to receive a struct with those parameters](#change_defaults)
+* [Rename/Move a type](#mv-type)
+* [Rename/Move a header](#mv-header)
+* [Change the return type (or "overloading" by return type)](#change_ret_type)
+* [Reasonably safe changes](#reasonably_safe_changes)
 * [Move symbols to a different namespace](#move_symb_to_ns)
 * [Move symbols to a different class](#move_symb_to_class)
---></li>
-</ul>
+-->
 <h1 id="how-to-in-a-backwards-compatible-way">How to, in a backwards
 compatible way:</h1>
 <details>
-<summary id="mv-namespace">
+<summary style="font-size:25px" id="mv-namespace">
 Rename a namespace
 </summary>
-<p><strong>Initial code:</strong></p>
+<h3 id="initial-code">Initial code:</h3>
 <div class="sourceCode" id="cb1"><pre
 class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">namespace</span> path<span class="op">::</span>to<span class="op">::</span>v1 <span class="op">{</span> <span class="op">...</span> <span class="op">}</span></span></code></pre></div>
-<p><strong>Scenario:</strong> We maybe need to change the namespace name
-to fix a typo. We will change it from <code>path::to::v1</code> to
+<h3 id="scenario">Scenario:</h3>
+<p>We maybe need to change the namespace name to fix a typo. We will
+change it from <code>path::to::v1</code> to
 <code>path::to::v2</code>.</p>
-<p><strong>Solution:</strong> Rename the old namespace to the new one
-and add a namespace alias for the old one.</p>
+<h3 id="solution">Solution:</h3>
+<p>Rename the old namespace to the new one and add a namespace alias for
+the old one.</p>
 <div class="sourceCode" id="cb2"><pre
 class="sourceCode diff"><code class="sourceCode diff"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="va">+ namespace path::to::v2 {}</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="va">+ namespace path::to {</span></span>
@@ -291,7 +293,7 @@ class="sourceCode diff"><code class="sourceCode diff"><span id="cb2-1"><a href="
 <span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="va">+ </span></span>
 <span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="st">- namespace path::to::v1 { ... }</span></span>
 <span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="va">+ namespace path::to::v2 { ... }</span></span></code></pre></div>
-<p><strong>Remarks:</strong></p>
+<h3 id="remarks">Remarks:</h3>
 <ul>
 <li><p><code>[[deprecated]]</code> attribute doesn’t work on namespace
 aliases. You can try compiler specific directives (Eg.
@@ -299,7 +301,7 @@ aliases. You can try compiler specific directives (Eg.
 <li><p>The empty namespace <code>namespace path::to::v2 {}</code> was
 added at the top of the file for visibility purposes</p></li>
 </ul>
-<p><strong>Files:</strong></p>
+<h3 id="relevant-files">Relevant Files:</h3>
 <ul>
 <li>API: <a
 href="some_unstable_lib/include/NamespaceRename.hpp">NamespaceRename.hpp</a></li>
@@ -308,26 +310,27 @@ href="tests/NamespaceRenameTest.cpp">NamespaceRenameTest.cpp</a></li>
 </ul>
 </details>
 <details>
-<summary id="change_defaults">
+<summary style="font-size:25px" id="change_defaults">
 Change method taking default parameters to taking struct
 </summary>
-<p><strong>Initial code:</strong></p>
+<h3 id="initial-code-1">Initial code:</h3>
 <div class="sourceCode" id="cb3"><pre
 class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="dt">void</span> SomeMethod<span class="op">(</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    <span class="at">const</span> <span class="dt">int</span> mandatory<span class="op">,</span></span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">const</span> <span class="dt">bool</span> opt1 <span class="op">=</span> <span class="kw">false</span><span class="op">,</span></span>
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">const</span> <span class="dt">float</span> opt2 <span class="op">=</span> <span class="fl">1e-6</span></span>
 <span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="op">)</span> <span class="op">{</span> <span class="op">...</span> <span class="op">}</span></span></code></pre></div>
-<p><strong>Scenario:</strong> This method receives too many default
-parameters, and it only becomes harder for users to call it with only 1
-or 2 parameters changed. We need to change the method to receive a
-struct containing these parameters instead.</p>
-<p><strong>Solution:</strong> If you just add the new
-<code>SomeMethod</code>, users calling <code>SomeMethod</code> with just
-the mandatory parameters will have the compiler complain about ambiguity
-( it won’t know which of the 2 methods to choose from). To tell it to
-prefer the newer one we need to make the old one less specialized by
-making it a template.</p>
+<h3 id="scenario-1">Scenario:</h3>
+<p>This method receives too many default parameters, and it only becomes
+harder for users to call it with only 1 or 2 parameters changed. We need
+to change the method to receive a struct containing these parameters
+instead.</p>
+<h3 id="solution-1">Solution:</h3>
+<p>If you just add the new <code>SomeMethod</code>, users calling
+<code>SomeMethod</code> with just the mandatory parameters will have the
+compiler complain about ambiguity (it won’t know which of the 2 methods
+to choose from). To tell it to prefer the newer one we need to make the
+old one less specialized by making it a template.</p>
 <div class="sourceCode" id="cb4"><pre
 class="sourceCode diff"><code class="sourceCode diff"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="va">+ template&lt;int = 0&gt;</span></span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>void SomeMethod(</span>
@@ -344,9 +347,10 @@ class="sourceCode diff"><code class="sourceCode diff"><span id="cb4-1"><a href="
 <span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="va">+     const int mandatory,</span></span>
 <span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="va">+     SomeMethodOpts opts = {}</span></span>
 <span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>) { ... }</span></code></pre></div>
-<p><strong>Remarks:</strong> You can deprecate the old
-<code>SomeMethod</code> (now a template)</p>
-<p><strong>Files:</strong></p>
+<h3 id="remarks-1">Remarks:</h3>
+<p>You can deprecate the old <code>SomeMethod</code> (now a
+template)</p>
+<h3 id="relevant-files-1">Relevant Files:</h3>
 <ul>
 <li>API: <a
 href="some_unstable_lib/include/MethodDefaultParams.hpp">MethodDefaultParams.hpp</a></li>
@@ -355,26 +359,28 @@ href="tests/MethodDefaultParamsTest.cpp">MethodDefaultParamsTest.cpp</a></li>
 </ul>
 </details>
 <details>
-<summary id="mv-type">
+<summary style="font-size:25px" id="mv-type">
 Rename a type
 </summary>
-<p><strong>Initial code:</strong></p>
+<h3 id="initial-code-2">Initial code:</h3>
 <div class="sourceCode" id="cb5"><pre
 class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">struct</span> OldName <span class="op">{</span> <span class="op">...</span> <span class="op">};</span></span></code></pre></div>
-<p><strong>Scenario:</strong> We maybe need to update the struct name to
-fix a typo. We will change it to <code>NewName</code>.</p>
-<p><strong>Solution:</strong> We can use a type alias.</p>
+<h3 id="scenario-2">Scenario:</h3>
+<p>We maybe need to update the struct name to fix a typo. We will change
+it to <code>NewName</code>.</p>
+<h3 id="solution-2">Solution:</h3>
+<p>We can use a type alias.</p>
 <div class="sourceCode" id="cb6"><pre
 class="sourceCode diff"><code class="sourceCode diff"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="st">- struct OldName { ... };</span></span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="va">+ struct NewName { ... };</span></span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="va">+ using OldName = NewName;</span></span></code></pre></div>
-<p><strong>Remarks:</strong></p>
+<h3 id="remarks-2">Remarks:</h3>
 <ul>
 <li>You can deprecate the old <code>OldName</code>.</li>
 <li>The users might learn the hard way that they shouldn’t forward
 declare foreign types.</li>
 </ul>
-<p><strong>Files:</strong></p>
+<h3 id="relevant-files-2">Relevant Files:</h3>
 <ul>
 <li>API: <a
 href="some_unstable_lib/include/StructRename.hpp">StructRename.hpp</a></li>
@@ -383,16 +389,16 @@ href="tests/StructRenameTest.cpp">StructRenameTest.cpp</a></li>
 </ul>
 </details>
 <details>
-<summary id="mv-header">
+<summary style="font-size:25px" id="mv-header">
 Move a header
 </summary>
-<p><strong>Initial code:</strong></p>
+<h3 id="initial-code-3">Initial code:</h3>
 <div class="sourceCode" id="cb7"><pre
 class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co">// v1/OldName.hpp:</span></span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span></code></pre></div>
-<p><strong>Scenario:</strong> We need to move/rename the header to
-<code>v2/NewName.hpp</code>.</p>
-<p><strong>Solution:</strong></p>
+<h3 id="scenario-3">Scenario:</h3>
+<p>We need to move/rename the header to <code>v2/NewName.hpp</code>.</p>
+<h3 id="solution-3">Solution:</h3>
 <ol type="1">
 <li>Move/rename the header:</li>
 </ol>
@@ -410,14 +416,15 @@ class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb9-1"><a href="#c
 <span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="co">// You can also deprecate it by inserting a compilation error/warning:</span></span>
 <span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="co">// #error/warning OldName.hpp is deprecated, include &quot;v2/NewName.hpp&quot;.`</span></span></code></pre></div>
-<p><strong>Remarks:</strong> Rename/move using the versioning tool
-(Git/SVN) so you don’t lose blame history.</p>
+<h3 id="remarks-3">Remarks:</h3>
+<p>Rename/move using the versioning tool (Git/SVN) so you don’t lose
+blame history.</p>
 </details>
 <details>
-<summary id="change_ret_type">
+<summary style="font-size:25px" id="change_ret_type">
 Change the return type (or “overload” by return type)
 </summary>
-<p><strong>Initial code:</strong></p>
+<h3 id="initial-code-4">Initial code:</h3>
 <div class="sourceCode" id="cb10"><pre
 class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co">// (1) change some primitive `T` to `NewUserDefT`</span></span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="dt">bool</span> CheckPassword<span class="op">(</span><span class="bu">std::</span>string<span class="op">);</span></span>
@@ -427,7 +434,7 @@ class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb10-1"><a href="#
 <span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="at">const</span> <span class="dt">float</span><span class="op">&amp;</span> GetMemF<span class="op">()</span> <span class="at">const</span> <span class="op">{</span></span>
 <span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="cf">return</span> <span class="va">m_memF</span><span class="op">;</span> <span class="op">}</span></span>
 <span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="op">};</span></span></code></pre></div>
-<p><strong>Scenario:</strong></p>
+<h3 id="scenario-4">Scenario:</h3>
 <ol type="1">
 <li><p><code>CheckPassword</code> method returns true if it succeeds,
 otherwise false. Make this method return some meaningful error message
@@ -438,7 +445,7 @@ value.</p></li>
 </ol>
 <p>However, we cannot just overload a function by return type and then
 deprecate it.</p>
-<p><strong>Solution:</strong></p>
+<h3 id="solution-4">Solution:</h3>
 <p>For (1): Return a new type that can be implicitly casted to bool.</p>
 <ul>
 <li>(1.1): If you don’t want it to be implicitly casted to other
@@ -481,10 +488,11 @@ class="sourceCode diff"><code class="sourceCode diff"><span id="cb11-1"><a href=
 <span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a><span class="va">+   const GetterRetT&amp; GetMemF() const { return m_memF; }</span></span>
 <span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a><span class="va">+   GetterRetT m_memF = 3.f;</span></span>
 <span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a>};</span></code></pre></div>
-<p><strong>Remarks:</strong> The implicit cast may happen in unintended
-scenarios. Also, you might want to deprecate the <code>OldRetT</code>
-cast operator and the <code>GetterRetT</code> type.</p>
-<p><strong>Files:</strong></p>
+<h3 id="remarks-4">Remarks:</h3>
+<p>The implicit cast may happen in unintended Scenarios. Also, you might
+want to deprecate the <code>OldRetT</code> cast operator and the
+<code>GetterRetT</code> type.</p>
+<h3 id="relevant-files-3">Relevant Files:</h3>
 <ul>
 <li>API: <a
 href="some_unstable_lib/include/ReturnTypeChange.hpp">include/ReturnTypeChange.hpp</a>
@@ -498,60 +506,69 @@ href="tests/ReturnTypeChangeByValueTest.hpp">tests/ReturnTypeChangeByValueTest.h
 href="neg-tests/ReturnTypeChangeTest.cpp">neg-tests/ReturnTypeChangeTest.cpp</a></li>
 </ul>
 </details>
-<details>
-<summary id="change_to_enum_class">
-Change old-style enum to enum class
-</summary>
-<p><strong>Initial code:</strong></p>
-<div class="sourceCode" id="cb12"><pre
-class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">enum</span> Handler <span class="op">{</span></span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>    StdOut<span class="op">,</span></span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    StdErr<span class="op">,</span></span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    File<span class="op">,</span></span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="op">};</span></span></code></pre></div>
-<p><strong>Scenario:</strong></p>
-<p>CTO: &gt; Upgrading old-style enums to enum classes shouldn’t be too
-hard … Right?</p>
-<p><strong>Solution:</strong></p>
-<p>In order to not break unscoped uses of the enum, we should define
-static variables for each enum entry.</p>
-<div class="sourceCode" id="cb13"><pre
-class="sourceCode diff"><code class="sourceCode diff"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="st">- enum Handler {</span></span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="va">+ enum class Handler {</span></span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    StdOut,</span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    StdErr,</span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    File,</span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>};</span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="va">+ static constexpr Handler StdOut = Handler::StdOut;</span></span>
-<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="va">+ static constexpr Handler StdErr = Handler::StdErr;</span></span>
-<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a><span class="va">+ static constexpr Handler File = Handler::File;</span></span></code></pre></div>
-<p><strong>Remarks:</strong></p>
-<p>If the enum was used as bit flags, define bitwise operators as
-well.</p>
-<p>Note: Assuming you have a <code>Log</code> method with 2 overloads,
-for <code>int</code> and for <code>Handler</code>, and expect
-<code>Log(StdOut | StdErr)</code> to still call <code>Log(int)</code>,
-then the return type for the bitwise operators should be
-<code>int</code>, otherwise <code>Handler</code>:</p>
-<div class="sourceCode" id="cb14"><pre
-class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Add `friend` if the enum lies inside a `struct`</span></span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="op">[</span><span class="kw">friend</span><span class="op">]</span> <span class="kw">constexpr</span> <span class="dt">int</span> <span class="kw">operator</span><span class="op">|(</span>Handler lhs<span class="op">,</span> Handler rhs<span class="op">)</span> <span class="op">{</span></span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="kw">static_cast</span><span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;(</span>lhs<span class="op">)</span> <span class="op">|</span> <span class="kw">static_cast</span><span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;(</span>rhs<span class="op">);</span></span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<p><strong>Files:</strong></p>
-<ul>
-<li>API: <a
-href="some_unstable_lib/include/ChangeToEnumClass.hpp">ChangeToEnumClass.hpp</a></li>
-<li>User: <a
-href="tests/ChangeToEnumClassTest.cpp">ChangeToEnumClassTest.cpp</a></li>
-</ul>
-</details>
 <!--
 <details>
-  <summary id="move_symb_to_ns">Move types/symbols to a different namespace</summary>
+  <summary style="font-size:25px" id="change_to_enum_class">Change old-style enum to enum class</summary>
 
-**Initial code:**
+### Initial code:
+
+```cpp
+enum Handler {
+    StdOut,
+    StdErr,
+    File,
+};
+```
+
+### Scenario:
+
+We need to modernize the API to use enum classes instead.
+
+### Solution:
+
+In order to not break unscoped uses of the enum, we should define static
+variables for each enum entry.
+
+```diff
+- enum Handler {
++ enum class Handler {
+    StdOut,
+    StdErr,
+    File,
+};
+
++ static constexpr Handler StdOut = Handler::StdOut;
++ static constexpr Handler StdErr = Handler::StdErr;
++ static constexpr Handler File = Handler::File;
+```
+
+### Remarks: 
+
+If the enum was used as bit flags, define bitwise operators as well.
+
+Note: Assuming you have a `Log` method with 2 overloads, for `int` and for `Handler`,
+and expect `Log(StdOut | StdErr)` to still call `Log(int)`, then
+the return type for the bitwise operators should be `int`, otherwise `Handler`:
+
+```cpp
+// Add `friend` if the enum lies inside a `struct`
+[friend] constexpr int operator|(Handler lhs, Handler rhs) {
+    return static_cast<int>(lhs) | static_cast<int>(rhs);
+}
+```
+
+### Relevant Files:
+
+* API: [ChangeToEnumClass.hpp](some_unstable_lib/include/ChangeToEnumClass.hpp)
+* User: [ChangeToEnumClassTest.cpp](tests/ChangeToEnumClassTest.cpp)
+
+</details>
+
+
+<details>
+  <summary style="font-size:25px" id="move_symb_to_ns">Move types/symbols to a different namespace</summary>
+
+### Initial code:
 
 ```cpp
 namespace path::to::v1 {
@@ -562,9 +579,9 @@ namespace path::to::v1 {
 }
 ```
 
-**Scenario:**
+### Scenario:
 
-**Solution:**
+### Solution:
 
 ```cpp
 // simply move them
@@ -591,17 +608,17 @@ using path::to::v2::SomeEnum::C;
 }
 ```
 
-**Remarks:**
+### Remarks:
 
-**Files:**
+### Relevant Files:
 
 </details>
 
 
 <details>
-  <summary id="move_symb_to_class">Move types/symbols to a different class</summary>
+  <summary style="font-size:25px" id="move_symb_to_class">Move types/symbols to a different class</summary>
 
-**Initial code:**
+### Initial code:
 
 ```cpp
 // Change: move these to NewClass
@@ -613,6 +630,8 @@ enum SomeEnum { A, B, C };
 bool Foo() { return true; }
 }
 ```
+
+### Solution:
 
 ```cpp
 // simply move them
@@ -640,34 +659,43 @@ NewClass m_newCls;
 }
 ```
 
-**Remarks:** You need to add a `static constexpr` for each enum field since it
+### Remarks:
+
+You need to add a `static constexpr` for each enum field since it
 is unscoped in the old class.
 
 </details>
 -->
 <h2 id="other-reasonably-safe-changes">Other reasonably safe
 changes:</h2>
-<p>TODO: add unit tests for these:</p>
 <ul>
-<li>removing the <code>const</code> when returning by value:
-<code>const RetT some_func()</code> (except when it is a virtual method,
-since it can be overriden by users)</li>
-<li>changing a class that has only static methods to a namespace</li>
-<li>add <code>static</code> to member function
-(<code>obj.SomeMethod(..)</code> still works)</li>
-<li>changing the underlying type of an enum</li>
-<li>adding <code>[[nodiscard]]</code> or <code>explicit</code> (since
-they prevent bugs)</li>
+<li>Adding <code>[[nodiscard]]</code> or <code>explicit</code>, if they
+help prevent bugs in user’s code</li>
+<li>Making a member function <code>static</code> if it doens’t use any
+members, since <code>obj.SomeMethod(..)</code> style calls will still
+compile.</li>
+<li>Removing the <code>const</code> when returning by value:
+<code>const RetT SomeMethod()</code>, except from virtual methods, since
+derived classes can overide them. Be wary of cases where the method
+called can change from <code>Foo(const RetT&amp;)</code> to
+<code>Foo(RetT&amp;)</code>, when called like so:
+<code>Foo(SomeMethod())</code>.</li>
+<li>Converting a class that has only static methods to a namespace (make
+sure the constructor is private and deprecate it if not)</li>
+<li>Changing the underlying type of an enum (e.g. from
+<code>enum class Flags: int</code> to
+<code>enum class Flags: int64_t</code>), except if it’s serialized to
+binary data</li>
 </ul>
 <!--
 ## <a name="quirks"/> Quirks
 
 <details>
-  <summary id="widen_enum">"Widening" the underlying type of an unscoped enum</summary>
+  <summary style="font-size:25px" id="widen_enum">"Widening" the underlying type of an unscoped enum</summary>
 
 **!Todo** add tests for this claim
 
-**Scenario:** When using enums to work with bitfields,
+### Scenario: When using enums to work with bitfields,
 we might not think ahead and end up in a situation where we
 want to add a new enum value D after C however we are at the
 limit of the default underlying type, i.e. `int`.
@@ -692,7 +720,7 @@ enum SomeEnum : std::uint64_t {
 };
 ```
 
-**Remarks:**
+### Remarks:
 This is already backwards-compatible, because the following code does not
 give any underflow warnings.
 
