@@ -1,3 +1,5 @@
+<title>BC API tricks</title>
+
 # Backwards Compatibility tricks for API changes in C++
 
 This project contains "tricks" on how to make API changes backwards compatible
@@ -33,6 +35,7 @@ All tests are run twice, with the macro BC_API_CHANGED OFF (before the API chang
 and ON (after).
 
 
+<!--
 # Overview
 * [Rename/Move a namespace](#mv-namespace)
 * [Change method with default parameters to receive a struct with those parameters](#change_defaults)
@@ -40,7 +43,6 @@ and ON (after).
 * [Rename/Move a header](#mv-header)
 * [Change the return type (or "overloading" by return type)](#change_ret_type)
 * [Reasonably safe changes](#reasonably_safe_changes)
-<!--
 * [Move symbols to a different namespace](#move_symb_to_ns)
 * [Move symbols to a different class](#move_symb_to_class)
 -->
@@ -49,18 +51,22 @@ and ON (after).
 # How to, in a backwards compatible way:
 
 <details>
-  <summary id="mv-namespace">Rename a namespace</summary>
+  <summary style="font-size:25px" id="mv-namespace">Rename a namespace</summary>
 
-**Initial code:**
+### Initial code:
 
 ```cpp
 namespace path::to::v1 { ... }
 ```
 
-**Scenario:** We maybe need to change the namespace name to fix a typo.
+### Scenario:
+
+We maybe need to change the namespace name to fix a typo.
 We will change it from `path::to::v1` to `path::to::v2`.
 
-**Solution:** Rename the old namespace to the new one and add a namespace alias
+### Solution:
+
+Rename the old namespace to the new one and add a namespace alias
 for the old one.
 
 ```diff
@@ -73,7 +79,7 @@ for the old one.
 + namespace path::to::v2 { ... }
 ```
 
-**Remarks:**
+### Remarks:
 
 * `[[deprecated]]` attribute doesn't work on namespace aliases.
   You can try compiler specific directives (Eg. `#pragma deprecated(keyword)` for
@@ -82,7 +88,7 @@ for the old one.
 * The empty namespace `namespace path::to::v2 {}` was added at the top of the
 file for visibility purposes
 
-**Files:**
+### Relevant Files:
 
 * API: [NamespaceRename.hpp](some_unstable_lib/include/NamespaceRename.hpp)
 * User: [NamespaceRenameTest.cpp](tests/NamespaceRenameTest.cpp)
@@ -91,9 +97,9 @@ file for visibility purposes
 
 
 <details>
-  <summary id="change_defaults">Change method taking default parameters to taking struct</summary>
+  <summary style="font-size:25px" id="change_defaults">Change method taking default parameters to taking struct</summary>
 
-**Initial code:**
+### Initial code:
 
 ```cpp
 void SomeMethod(
@@ -103,18 +109,19 @@ void SomeMethod(
 ) { ... }
 ```
 
-**Scenario:** This method receives too many default parameters, and it only
-becomes
-harder for users to call it with only 1 or 2 parameters changed. We need to
-change
-the method to receive a struct containing these parameters instead.
+### Scenario:
 
-**Solution:** If you just add the new `SomeMethod`, users calling `SomeMethod`
-with
-just the mandatory parameters will have the compiler complain about ambiguity (
-it won't
-know which of the 2 methods to choose from). To tell it to prefer the newer
-one we need to make the old one less specialized by making it a template.
+This method receives too many default parameters, and it only becomes
+harder for users to call it with only 1 or 2 parameters changed. We need to
+change the method to receive a struct containing these parameters instead.
+
+### Solution:
+
+If you just add the new `SomeMethod`, users calling `SomeMethod` with
+just the mandatory parameters will have the compiler complain about ambiguity
+(it won't know which of the 2 methods to choose from).
+To tell it to prefer the newer one we need to make the old one less
+specialized by making it a template.
 
 ```diff
 + template<int = 0>
@@ -134,9 +141,11 @@ void SomeMethod(
 ) { ... }
 ```
 
-**Remarks:** You can deprecate the old `SomeMethod` (now a template)
+### Remarks:
 
-**Files:**
+You can deprecate the old `SomeMethod` (now a template)
+
+### Relevant Files:
 
 * API: [MethodDefaultParams.hpp](some_unstable_lib/include/MethodDefaultParams.hpp)
 * User: [MethodDefaultParamsTest.cpp](tests/MethodDefaultParamsTest.cpp)
@@ -145,18 +154,22 @@ void SomeMethod(
 
 
 <details>
-  <summary id="mv-type">Rename a type</summary>
+  <summary style="font-size:25px" id="mv-type">Rename a type</summary>
 
-**Initial code:**
+### Initial code:
 
 ```cpp
 struct OldName { ... };
 ```
 
-**Scenario:** We maybe need to update the struct name to fix a typo.
+### Scenario:
+
+We maybe need to update the struct name to fix a typo.
 We will change it to `NewName`.
 
-**Solution:** We can use a type alias.
+### Solution:
+
+We can use a type alias.
 
 ```diff
 - struct OldName { ... };
@@ -164,13 +177,13 @@ We will change it to `NewName`.
 + using OldName = NewName;
 ```
 
-**Remarks:**
+### Remarks:
 
 * You can deprecate the old `OldName`.
 * The users might learn the hard way that they shouldn't forward declare foreign
   types.
 
-**Files:**
+### Relevant Files:
 
 * API: [StructRename.hpp](some_unstable_lib/include/StructRename.hpp)
 * User: [StructRenameTest.cpp](tests/StructRenameTest.cpp)
@@ -179,18 +192,20 @@ We will change it to `NewName`.
 
 
 <details>
-  <summary id="mv-header">Move a header</summary>
+  <summary style="font-size:25px" id="mv-header">Move a header</summary>
 
-**Initial code:**
+### Initial code:
 
 ```cpp
 // v1/OldName.hpp:
 ...
 ```
 
-**Scenario:** We need to move/rename the header to `v2/NewName.hpp`.
+### Scenario:
 
-**Solution:**
+We need to move/rename the header to `v2/NewName.hpp`.
+
+### Solution:
 
 1. Move/rename the header:
 
@@ -211,16 +226,17 @@ We will change it to `NewName`.
 // #error/warning OldName.hpp is deprecated, include "v2/NewName.hpp".`
 ```
 
-**Remarks:** Rename/move using the versioning tool (Git/SVN) so you don't lose
-blame history.
+### Remarks:
+
+Rename/move using the versioning tool (Git/SVN) so you don't lose blame history.
 
 </details>
 
 
 <details>
-  <summary id="change_ret_type">Change the return type (or "overload" by return type)</summary>
+  <summary style="font-size:25px" id="change_ret_type">Change the return type (or "overload" by return type)</summary>
 
-**Initial code:**
+### Initial code:
 
 ```cpp
 // (1) change some primitive `T` to `NewUserDefT`
@@ -233,7 +249,7 @@ return m_memF; }
 };
 ```
 
-**Scenario:**
+### Scenario:
 
 (1) `CheckPassword` method returns true if it succeeds, otherwise false.
 Make this method return some meaningful error message so the user knows why it
@@ -245,7 +261,7 @@ multiple reasons. We need to return by value.
 However, we cannot just overload a function by return type and then deprecate
 it.
 
-**Solution:**
+### Solution:
 
 For (1): Return a new type that can be implicitly casted to bool.
 
@@ -290,11 +306,13 @@ struct Strukt {
 };
 ```
 
-**Remarks:** The implicit cast may happen in unintended scenarios.
+### Remarks:
+
+The implicit cast may happen in unintended Scenarios.
 Also, you might want to deprecate the `OldRetT` cast operator and
 the `GetterRetT` type.
 
-**Files:**
+### Relevant Files:
 
 * API: [include/ReturnTypeChange.hpp](some_unstable_lib/include/ReturnTypeChange.hpp)
   [include/ReturnTypeChangeByValue.hpp](some_unstable_lib/include/ReturnTypeChangeByValue.hpp)
@@ -304,11 +322,11 @@ the `GetterRetT` type.
 
 </details>
 
-
+<!--
 <details>
-  <summary id="change_to_enum_class">Change old-style enum to enum class</summary>
+  <summary style="font-size:25px" id="change_to_enum_class">Change old-style enum to enum class</summary>
 
-**Initial code:**
+### Initial code:
 
 ```cpp
 enum Handler {
@@ -318,11 +336,11 @@ enum Handler {
 };
 ```
 
-**Scenario:**
+### Scenario:
 
-CTO: > Upgrading old-style enums to enum classes shouldn't be too hard ... Right?
+We need to modernize the API to use enum classes instead.
 
-**Solution:**
+### Solution:
 
 In order to not break unscoped uses of the enum, we should define static
 variables for each enum entry.
@@ -340,7 +358,7 @@ variables for each enum entry.
 + static constexpr Handler File = Handler::File;
 ```
 
-**Remarks:** 
+### Remarks: 
 
 If the enum was used as bit flags, define bitwise operators as well.
 
@@ -355,18 +373,18 @@ the return type for the bitwise operators should be `int`, otherwise `Handler`:
 }
 ```
 
-**Files:**
+### Relevant Files:
 
 * API: [ChangeToEnumClass.hpp](some_unstable_lib/include/ChangeToEnumClass.hpp)
 * User: [ChangeToEnumClassTest.cpp](tests/ChangeToEnumClassTest.cpp)
 
 </details>
 
-<!--
-<details>
-  <summary id="move_symb_to_ns">Move types/symbols to a different namespace</summary>
 
-**Initial code:**
+<details>
+  <summary style="font-size:25px" id="move_symb_to_ns">Move types/symbols to a different namespace</summary>
+
+### Initial code:
 
 ```cpp
 namespace path::to::v1 {
@@ -377,9 +395,9 @@ namespace path::to::v1 {
 }
 ```
 
-**Scenario:**
+### Scenario:
 
-**Solution:**
+### Solution:
 
 ```cpp
 // simply move them
@@ -406,17 +424,17 @@ using path::to::v2::SomeEnum::C;
 }
 ```
 
-**Remarks:**
+### Remarks:
 
-**Files:**
+### Relevant Files:
 
 </details>
 
 
 <details>
-  <summary id="move_symb_to_class">Move types/symbols to a different class</summary>
+  <summary style="font-size:25px" id="move_symb_to_class">Move types/symbols to a different class</summary>
 
-**Initial code:**
+### Initial code:
 
 ```cpp
 // Change: move these to NewClass
@@ -428,6 +446,8 @@ enum SomeEnum { A, B, C };
 bool Foo() { return true; }
 }
 ```
+
+### Solution:
 
 ```cpp
 // simply move them
@@ -455,7 +475,9 @@ NewClass m_newCls;
 }
 ```
 
-**Remarks:** You need to add a `static constexpr` for each enum field since it
+### Remarks:
+
+You need to add a `static constexpr` for each enum field since it
 is unscoped in the old class.
 
 </details>
@@ -463,24 +485,22 @@ is unscoped in the old class.
 
 ## Other reasonably safe changes:
 
-TODO: add unit tests for these:
-
-* removing the `const` when returning by value: `const RetT some_func()`
-  (except when it is a virtual method, since it can be overriden by users)
-* changing a class that has only static methods to a namespace
-* add `static` to member function (`obj.SomeMethod(..)` still works)
-* changing the underlying type of an enum
-* adding `[[nodiscard]]` or `explicit` (since they prevent bugs)
+* Adding `[[nodiscard]]` or `explicit`, if they help prevent bugs in user's code
+* Making a member function `static` if it doens't use any members, since `obj.SomeMethod(..)` style calls will still compile.
+* Removing the `const` when returning by value: `const RetT SomeMethod()`, except from virtual methods, since derived classes can overide them.
+Be wary of cases where the method called can change from `Foo(const RetT&)` to `Foo(RetT&)`, when called like so: `Foo(SomeMethod())`.
+* Converting a class that has only static methods to a namespace (make sure the constructor is private and deprecate it if not)
+* Changing the underlying type of an enum (e.g. from `enum class Flags: int` to `enum class Flags: int64_t`), except if it's serialized to binary data
 
 <!--
 ## <a name="quirks"/> Quirks
 
 <details>
-  <summary id="widen_enum">"Widening" the underlying type of an unscoped enum</summary>
+  <summary style="font-size:25px" id="widen_enum">"Widening" the underlying type of an unscoped enum</summary>
 
 **!Todo** add tests for this claim
 
-**Scenario:** When using enums to work with bitfields,
+### Scenario: When using enums to work with bitfields,
 we might not think ahead and end up in a situation where we
 want to add a new enum value D after C however we are at the
 limit of the default underlying type, i.e. `int`.
@@ -505,7 +525,7 @@ enum SomeEnum : std::uint64_t {
 };
 ```
 
-**Remarks:**
+### Remarks:
 This is already backwards-compatible, because the following code does not
 give any underflow warnings.
 
