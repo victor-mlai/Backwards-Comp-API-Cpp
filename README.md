@@ -20,36 +20,31 @@ forward declarations or function pointer aliases.
 
 # Project internals
 
-The tests are run twice, with the macro BC_API_CHANGED OFF (before the API change)
-and ON (after).
-
-/some_unstable_lib represents a library which exports both the old API and the
-new (changed) API based on the macro BC_API_CHANGED.
+/some_unstable_lib contains a header file for each API change in the list further down.
+Each header either exposes the old API or the changed one based on the macro BC_API_CHANGED.
 
 /tests represents the users of the library whose code must compile
 before and after the API change.
 
 /neg-tests contains code that should not compile after the API change.
+One file per each such case.
 
-* If an API change can lead to multiple kinds of compile errors then
-each of these errors should be isolated in separate files.
+All tests are run twice, with the macro BC_API_CHANGED OFF (before the API change)
+and ON (after).
 
-<!--
+
 # Overview
-
-* Renames:
-  * [Rename/Move a type](#mv-type)
-  * [Rename/Move a namespace](#mv-namespace)
-  * [Rename/Move a header](#mv-header)
-* Misc:
-  * [Change method with default parameters to receive a struct with those parameters](#change_defaults)
-  * [Change the return type (or "overloading" by return type)](#change_ret_type)
-  * [Move symbols to a different namespace](#move_symb_to_ns)
-  * [Move symbols to a different class](#move_symb_to_class)
+* [Rename/Move a namespace](#mv-namespace)
+* [Change method with default parameters to receive a struct with those parameters](#change_defaults)
+* [Rename/Move a type](#mv-type)
+* [Rename/Move a header](#mv-header)
+* [Change the return type (or "overloading" by return type)](#change_ret_type)
 * [Reasonably safe changes](#reasonably_safe_changes)
-* [Quirks](#quirks)
-* [ToDo](#todo)
+<!--
+* [Move symbols to a different namespace](#move_symb_to_ns)
+* [Move symbols to a different class](#move_symb_to_class)
 -->
+
 
 # How to, in a backwards compatible way:
 
