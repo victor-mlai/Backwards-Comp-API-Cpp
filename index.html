@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
-  <title>README</title>
+  <title>BC API tricks</title>
   <style>
     html {
       color: #1a1a1a;
@@ -229,9 +229,9 @@
   </style>
 </head>
 <body>
-<title>
-BC API tricks
-</title>
+<header id="title-block-header">
+<h1 class="title">BC API tricks</h1>
+</header>
 <h1 id="backwards-compatibility-tricks-for-api-changes-in-c">Backwards
 Compatibility tricks for API changes in C++</h1>
 <p>This project contains “tricks” on how to make API changes backwards
@@ -272,7 +272,7 @@ the API change) and ON (after).</p>
 <h1 id="how-to-in-a-backwards-compatible-way">How to, in a backwards
 compatible way:</h1>
 <details>
-<summary style="font-size:25px" id="mv-namespace">
+<summary style="font-size:20px" id="mv-namespace">
 Rename a namespace
 </summary>
 <h3 id="initial-code">Initial code:</h3>
@@ -310,7 +310,7 @@ href="tests/NamespaceRenameTest.cpp">NamespaceRenameTest.cpp</a></li>
 </ul>
 </details>
 <details>
-<summary style="font-size:25px" id="change_defaults">
+<summary style="font-size:20px" id="change_defaults">
 Change method taking default parameters to taking struct
 </summary>
 <h3 id="initial-code-1">Initial code:</h3>
@@ -359,7 +359,7 @@ href="tests/MethodDefaultParamsTest.cpp">MethodDefaultParamsTest.cpp</a></li>
 </ul>
 </details>
 <details>
-<summary style="font-size:25px" id="mv-type">
+<summary style="font-size:20px" id="mv-type">
 Rename a type
 </summary>
 <h3 id="initial-code-2">Initial code:</h3>
@@ -389,7 +389,7 @@ href="tests/StructRenameTest.cpp">StructRenameTest.cpp</a></li>
 </ul>
 </details>
 <details>
-<summary style="font-size:25px" id="mv-header">
+<summary style="font-size:20px" id="mv-header">
 Move a header
 </summary>
 <h3 id="initial-code-3">Initial code:</h3>
@@ -421,7 +421,7 @@ class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb9-1"><a href="#c
 blame history.</p>
 </details>
 <details>
-<summary style="font-size:25px" id="change_ret_type">
+<summary style="font-size:20px" id="change_ret_type">
 Change the return type (or “overload” by return type)
 </summary>
 <h3 id="initial-code-4">Initial code:</h3>
@@ -508,7 +508,7 @@ href="neg-tests/ReturnTypeChangeTest.cpp">neg-tests/ReturnTypeChangeTest.cpp</a>
 </details>
 <!--
 <details>
-  <summary style="font-size:25px" id="change_to_enum_class">Change old-style enum to enum class</summary>
+  <summary style="font-size:20px" id="change_to_enum_class">Change old-style enum to enum class</summary>
 
 ### Initial code:
 
@@ -566,7 +566,7 @@ the return type for the bitwise operators should be `int`, otherwise `Handler`:
 
 
 <details>
-  <summary style="font-size:25px" id="move_symb_to_ns">Move types/symbols to a different namespace</summary>
+  <summary style="font-size:20px" id="move_symb_to_ns">Move types/symbols to a different namespace</summary>
 
 ### Initial code:
 
@@ -616,7 +616,7 @@ using path::to::v2::SomeEnum::C;
 
 
 <details>
-  <summary style="font-size:25px" id="move_symb_to_class">Move types/symbols to a different class</summary>
+  <summary style="font-size:20px" id="move_symb_to_class">Move types/symbols to a different class</summary>
 
 ### Initial code:
 
@@ -691,7 +691,7 @@ binary data</li>
 ## <a name="quirks"/> Quirks
 
 <details>
-  <summary style="font-size:25px" id="widen_enum">"Widening" the underlying type of an unscoped enum</summary>
+  <summary style="font-size:20px" id="widen_enum">"Widening" the underlying type of an unscoped enum</summary>
 
 **!Todo** add tests for this claim
 

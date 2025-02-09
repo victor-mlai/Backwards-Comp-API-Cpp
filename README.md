@@ -1,5 +1,3 @@
-<title>BC API tricks</title>
-
 # Backwards Compatibility tricks for API changes in C++
 
 This project contains "tricks" on how to make API changes backwards compatible
@@ -51,7 +49,7 @@ and ON (after).
 # How to, in a backwards compatible way:
 
 <details>
-  <summary style="font-size:25px" id="mv-namespace">Rename a namespace</summary>
+  <summary style="font-size:20px" id="mv-namespace">Rename a namespace</summary>
 
 ### Initial code:
 
@@ -97,7 +95,7 @@ file for visibility purposes
 
 
 <details>
-  <summary style="font-size:25px" id="change_defaults">Change method taking default parameters to taking struct</summary>
+  <summary style="font-size:20px" id="change_defaults">Change method taking default parameters to taking struct</summary>
 
 ### Initial code:
 
@@ -154,7 +152,7 @@ You can deprecate the old `SomeMethod` (now a template)
 
 
 <details>
-  <summary style="font-size:25px" id="mv-type">Rename a type</summary>
+  <summary style="font-size:20px" id="mv-type">Rename a type</summary>
 
 ### Initial code:
 
@@ -192,7 +190,7 @@ We can use a type alias.
 
 
 <details>
-  <summary style="font-size:25px" id="mv-header">Move a header</summary>
+  <summary style="font-size:20px" id="mv-header">Move a header</summary>
 
 ### Initial code:
 
@@ -234,7 +232,7 @@ Rename/move using the versioning tool (Git/SVN) so you don't lose blame history.
 
 
 <details>
-  <summary style="font-size:25px" id="change_ret_type">Change the return type (or "overload" by return type)</summary>
+  <summary style="font-size:20px" id="change_ret_type">Change the return type (or "overload" by return type)</summary>
 
 ### Initial code:
 
@@ -324,7 +322,7 @@ the `GetterRetT` type.
 
 <!--
 <details>
-  <summary style="font-size:25px" id="change_to_enum_class">Change old-style enum to enum class</summary>
+  <summary style="font-size:20px" id="change_to_enum_class">Change old-style enum to enum class</summary>
 
 ### Initial code:
 
@@ -382,7 +380,7 @@ the return type for the bitwise operators should be `int`, otherwise `Handler`:
 
 
 <details>
-  <summary style="font-size:25px" id="move_symb_to_ns">Move types/symbols to a different namespace</summary>
+  <summary style="font-size:20px" id="move_symb_to_ns">Move types/symbols to a different namespace</summary>
 
 ### Initial code:
 
@@ -432,7 +430,7 @@ using path::to::v2::SomeEnum::C;
 
 
 <details>
-  <summary style="font-size:25px" id="move_symb_to_class">Move types/symbols to a different class</summary>
+  <summary style="font-size:20px" id="move_symb_to_class">Move types/symbols to a different class</summary>
 
 ### Initial code:
 
@@ -496,7 +494,7 @@ Be wary of cases where the method called can change from `Foo(const RetT&)` to `
 ## <a name="quirks"/> Quirks
 
 <details>
-  <summary style="font-size:25px" id="widen_enum">"Widening" the underlying type of an unscoped enum</summary>
+  <summary style="font-size:20px" id="widen_enum">"Widening" the underlying type of an unscoped enum</summary>
 
 **!Todo** add tests for this claim
 
