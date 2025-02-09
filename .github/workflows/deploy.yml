@@ -1,0 +1,29 @@
+name: Deploy README to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main  # Adjust if your default branch is different
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Pandoc
+        run: sudo apt-get install -y pandoc
+
+      - name: Convert README.md to index.html
+        run: pandoc README.md -f markdown -t html -s -o index.html
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: ./
