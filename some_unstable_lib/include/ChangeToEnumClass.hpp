@@ -1,35 +1,30 @@
 #pragma once
 
-struct Logger {
+struct Text {
 #ifndef BC_API_CHANGED
-    enum Handler {
-        StdOut,
-        StdErr,
-        File,
+    enum Style {
+        STYLE_BOLD,
+        STYLE_ITALLIC,
+        STYLE_STRIKE_THROUGH,
     };
 #else
-    enum class Handler {
-        StdOut,
-        StdErr,
-        File,
+    enum class Style {
+        Bold,
+        STYLE_BOLD = Bold,
+        Itallic,
+        STYLE_ITALLIC = Itallic,
+        StrikeThrough,
+        STYLE_STRIKE_THROUGH = StrikeThrough,
     };
 
-    static constexpr Handler StdOut = Handler::StdOut;
-    static constexpr Handler StdErr = Handler::StdErr;
-    static constexpr Handler File = Handler::File;
+    static inline Style STYLE_BOLD = Style::Bold;
+    static inline Style STYLE_ITALLIC = Style::Itallic;
+    static inline Style STYLE_STRIKE_THROUGH = Style::StrikeThrough;
 
     // If the enum was used as bit flags, define bitwise operators as well.
-    //
-    // If you expect Log(StdOut | StdErr) to still call `Log(int)`, then
-    // the return type should be `int`, otherwise change it to `Handler`
-    friend constexpr int operator|(Handler lhs, Handler rhs) {
-        return static_cast<int>(lhs) | static_cast<int>(rhs);
+    friend inline Style operator|(Style lhs, Style rhs) {
+        using ut = std::underlying_type_t<Style>;
+        return Style{static_cast<ut>(lhs) | static_cast<ut>(rhs)};
     }
 #endif
-
-    // track which Log overload was called
-    enum Tag { LogInt, LogEnum };
-
-    constexpr Tag Log(int) const { return LogInt; }
-    constexpr Tag Log(Handler) const { return LogEnum; }
 };

@@ -234,9 +234,9 @@
 </header>
 <h1 id="backwards-compatibility-tricks-for-api-changes-in-c">Backwards
 Compatibility tricks for API changes in C++</h1>
-<p>This project contains “tricks” on how to make API changes backwards
-compatible (Eg. changing return types, renaming namespaces, changing
-enums to enum classes etc.)</p>
+<p>This project contains “tricks” on how to make backwards compatible
+API changes. (Eg. renaming a class, changing parameter types, converting
+an enum to a variant etc.)</p>
 <p>It contains also tests (see /tests and /neg-tests) to prove that the
 tricks make them backwards compatible and don’t break something
 else.</p>
@@ -422,8 +422,14 @@ blame history.</p>
 </details>
 <details>
 <summary style="font-size:20px" id="change_ret_type">
-Change the return type (or “overload” by return type)
+Change the return type
 </summary>
+<h3 id="warning">Warning:</h3>
+<p>Prefer to just add a new method called slightly different instead.
+What’s about to follow is over-engineered.</p>
+<p>In short: we will overload the implicit cast operator of the returned
+type, and if the returned type is a primitive, we will create a new type
+that wraps it.</p>
 <h3 id="initial-code-4">Initial code:</h3>
 <div class="sourceCode" id="cb10"><pre
 class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co">// (1) change some primitive `T` to `NewUserDefT`</span></span>
@@ -431,38 +437,31 @@ class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb10-1"><a href="#
 <span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="co">// (2) change some primitive `const T&amp;` to primitive `T`</span></span>
 <span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="kw">struct</span> Strukt <span class="op">{</span></span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="at">const</span> <span class="dt">float</span><span class="op">&amp;</span> GetMemF<span class="op">()</span> <span class="at">const</span> <span class="op">{</span></span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="cf">return</span> <span class="va">m_memF</span><span class="op">;</span> <span class="op">}</span></span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="op">};</span></span></code></pre></div>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">const</span> <span class="dt">float</span><span class="op">&amp;</span> GetMemF<span class="op">()</span> <span class="at">const</span> <span class="op">{</span> <span class="cf">return</span> <span class="va">m_memF</span><span class="op">;</span> <span class="op">}</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="kw">private</span><span class="op">:</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>  <span class="dt">float</span> <span class="va">m_memF</span><span class="op">;</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="op">};</span></span></code></pre></div>
 <h3 id="scenario-4">Scenario:</h3>
 <ol type="1">
 <li><p><code>CheckPassword</code> method returns true if it succeeds,
 otherwise false. Make this method return some meaningful error message
 so the user knows why it failed (why it returned false).</p></li>
-<li><p><code>Strukt::GetMemF</code> returns primitive types as
-const&amp; which is bad for multiple reasons. We need to return by
-value.</p></li>
+<li><p><code>Strukt::GetMemF</code> returns a primitive type as
+const&amp; which is bad for multiple reasons (performance, <a
+href="https://www.sandordargo.com/blog/2020/11/18/when-use-const-3-return-types#returning-const-references">lifetime</a>,
+complexity issues). We need to return by value.</p></li>
 </ol>
-<p>However, we cannot just overload a function by return type and then
-deprecate it.</p>
+<p>Unfortunately, we cannot just overload a function by return type and
+then deprecate it.</p>
 <h3 id="solution-4">Solution:</h3>
-<p>For (1): Return a new type that can be implicitly casted to bool.</p>
+<p>For situation (1): Return a new type that can be implicitly casted to
+bool.</p>
 <ul>
 <li>(1.1): If you don’t want it to be implicitly casted to other
 primitive types like <code>int</code>, since C++20 you can make it
 conditionally explicit. (In the tests,
 <code>int x = CheckPassword("");</code> doesn’t compile after the API
 change, while <code>bool x = CheckPassword("");</code> does)</li>
-</ul>
-<p>For (2): Add a new class with an implicit cast operator to
-<code>NewRetT</code> and <code>OldRetT</code>.</p>
-<ul>
-<li>(2.1) Additionally, if the compiler can’t decide between the 2 cast
-operators at overload resolution, templating the old one makes it choose
-the new overload candidate since it’s more specialized.</li>
-<li>(2.2) Return GetterRetT by const&amp; to avoid dangling references
-in user’s Wrappers that only forward the old
-<code>const float&amp;</code></li>
 </ul>
 <div class="sourceCode" id="cb11"><pre
 class="sourceCode diff"><code class="sourceCode diff"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>// (1) change primitive `T` to `NewUserDefT`</span>
@@ -473,25 +472,34 @@ class="sourceCode diff"><code class="sourceCode diff"><span id="cb11-1"><a href=
 <span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="va">+     std::optional&lt;std::string&gt; m_errMsg;</span></span>
 <span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="va">+ };</span></span>
 <span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="st">- bool CheckPassword(std::string);</span></span>
-<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="va">+ CheckPasswordResult CheckPassword(std::string);</span></span>
-<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>// (2) change primitive `const T&amp;` to primitive `T`</span>
-<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a><span class="va">+ struct SomeMethodRetT {</span></span>
-<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a><span class="va">+   template &lt;int = 0&gt; // (2.1)</span></span>
-<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a><span class="va">+   operator OldRetT () const { ... }</span></span>
-<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a><span class="va">+   operator NewRetT () const { ... }</span></span>
-<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a><span class="va">+ };</span></span>
-<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>struct Strukt {</span>
-<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a><span class="st">-   const float&amp; GetMemF() const { return m_memF; }</span></span>
-<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a><span class="st">-   float m_memF = 3.f;</span></span>
-<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a><span class="va">+   // (2.2)</span></span>
-<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a><span class="va">+   const GetterRetT&amp; GetMemF() const { return m_memF; }</span></span>
-<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a><span class="va">+   GetterRetT m_memF = 3.f;</span></span>
-<span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a>};</span></code></pre></div>
-<h3 id="remarks-4">Remarks:</h3>
-<p>The implicit cast may happen in unintended Scenarios. Also, you might
-want to deprecate the <code>OldRetT</code> cast operator and the
-<code>GetterRetT</code> type.</p>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="va">+ CheckPasswordResult CheckPassword(std::string);</span></span></code></pre></div>
+<p>For situation (2): Add a new class <code>GetterRetT</code> with 2
+implicit cast operators to <code>NewRetT</code> and to
+<code>OldRetT</code>. “Mark” the implicit cast operator to
+<code>OldRetT</code> as deprecated and as “less specialized” (i.e. as
+template, so that the compiler will choose at “overload resolution” the
+<code>NewRetT</code> overload).</p>
+<p>Additionally, inside the <code>Strukt</code> return
+<code>GetterRetT</code> by <code>const&amp;</code> so that we avoid
+runtime exceptions from dangling references in user’s code in case they
+have a StruktWrapper class that also has a
+<code>const float&amp; GetMemF()</code> that called and returned the
+result of our <code>GetMemF()</code>.</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode diff"><code class="sourceCode diff"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>// (2) change primitive `const T&amp;` to primitive `T`</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="va">+ struct GetterRetT {</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="va">+   template &lt;int = 0&gt; // (2.1)</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="va">+   operator OldRetT () const { ... }</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="va">+   operator NewRetT () const { ... }</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="va">+ };</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>struct Strukt {</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="st">-   const float&amp; GetMemF() const { return m_memF; }</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="va">+   const GetterRetT&amp; GetMemF() const { return m_memF; }</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>private:</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a><span class="st">-   float m_memF = 3.f;</span></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a><span class="va">+   GetterRetT m_memF = 3.f;</span></span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>};</span></code></pre></div>
 <h3 id="relevant-files-3">Relevant Files:</h3>
 <ul>
 <li>API: <a
@@ -506,64 +514,67 @@ href="tests/ReturnTypeChangeByValueTest.hpp">tests/ReturnTypeChangeByValueTest.h
 href="neg-tests/ReturnTypeChangeTest.cpp">neg-tests/ReturnTypeChangeTest.cpp</a></li>
 </ul>
 </details>
-<!--
 <details>
-  <summary style="font-size:20px" id="change_to_enum_class">Change old-style enum to enum class</summary>
-
-### Initial code:
-
-```cpp
-enum Handler {
-    StdOut,
-    StdErr,
-    File,
-};
-```
-
-### Scenario:
-
-We need to modernize the API to use enum classes instead.
-
-### Solution:
-
-In order to not break unscoped uses of the enum, we should define static
-variables for each enum entry.
-
-```diff
-- enum Handler {
-+ enum class Handler {
-    StdOut,
-    StdErr,
-    File,
-};
-
-+ static constexpr Handler StdOut = Handler::StdOut;
-+ static constexpr Handler StdErr = Handler::StdErr;
-+ static constexpr Handler File = Handler::File;
-```
-
-### Remarks: 
-
-If the enum was used as bit flags, define bitwise operators as well.
-
-Note: Assuming you have a `Log` method with 2 overloads, for `int` and for `Handler`,
-and expect `Log(StdOut | StdErr)` to still call `Log(int)`, then
-the return type for the bitwise operators should be `int`, otherwise `Handler`:
-
-```cpp
-// Add `friend` if the enum lies inside a `struct`
-[friend] constexpr int operator|(Handler lhs, Handler rhs) {
-    return static_cast<int>(lhs) | static_cast<int>(rhs);
-}
-```
-
-### Relevant Files:
-
-* API: [ChangeToEnumClass.hpp](some_unstable_lib/include/ChangeToEnumClass.hpp)
-* User: [ChangeToEnumClassTest.cpp](tests/ChangeToEnumClassTest.cpp)
-
+<summary style="font-size:20px" id="change_to_enum_class">
+Change old-style enum to enum class
+</summary>
+<h3 id="warning-1">Warning:</h3>
+<p>The proposed solution will break implicit conversion from the enum to
+integers.</p>
+<h3 id="initial-code-5">Initial code:</h3>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">enum</span> Style <span class="op">{</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    STYLE_BOLD<span class="op">,</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    STYLE_ITALLIC<span class="op">,</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    STYLE_STRIKE_THROUGH<span class="op">,</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="op">};</span></span></code></pre></div>
+<h3 id="scenario-5">Scenario:</h3>
+<p>We need to modernize the API to use <code>enum class</code>
+instead.</p>
+<h3 id="solution-5">Solution:</h3>
+<p>In order to not break scoped uses of the enum
+(e.g. <code>auto style = Style::STYLE_BOLD</code>) we will duplicate the
+enum fields with the enum class’s naming style, and make sure their
+value is assigned to the old enum fields.</p>
+<p>In order to not break unscoped uses of the enum
+(e.g. <code>auto style = STYLE_BOLD</code>), we will define static
+variables for each enum entry.</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode diff"><code class="sourceCode diff"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="st">- enum Style {</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="va">+ enum class Style {</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    Bold,</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    Itallic,</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    StrikeThrough,</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="va">+   STYLE_BOLD = Bold,</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="va">+   STYLE_ITALLIC = Itallic,</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="va">+   STYLE_STRIKE_THROUGH = StrikeThrough,</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>};</span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a><span class="va">+ static inline Style STYLE_BOLD = Style::Bold;</span></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a><span class="va">+ static inline Style STYLE_ITALLIC = Style::Itallic;</span></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a><span class="va">+ static inline Style STYLE_STRIKE_THROUGH = Style::StrikeThrough;</span></span></code></pre></div>
+<h3 id="remarks-4">Remarks:</h3>
+<ul>
+<li><p>Inspired by the <a
+href="https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0439r0.html">memory_order
+change in the standard</a></p></li>
+<li><p>If the enum was used as bit flags, define bitwise operators as
+well.</p></li>
+</ul>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Add `friend` if the enum lies inside a `struct`</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="op">[</span><span class="kw">friend</span><span class="op">]</span> <span class="kw">inline</span> Style <span class="kw">operator</span><span class="op">|(</span>Style lhs<span class="op">,</span> Style rhs<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> Style<span class="op">{</span><span class="kw">static_cast</span><span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;(</span>lhs<span class="op">)</span> <span class="op">|</span> <span class="kw">static_cast</span><span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;(</span>rhs<span class="op">)};</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<h3 id="relevant-files-4">Relevant Files:</h3>
+<ul>
+<li>API: <a
+href="some_unstable_lib/include/ChangeToEnumClass.hpp">ChangeToEnumClass.hpp</a></li>
+<li>User: <a
+href="tests/ChangeToEnumClassTest.cpp">ChangeToEnumClassTest.cpp</a></li>
+</ul>
 </details>
-
+<!--
 
 <details>
   <summary style="font-size:20px" id="move_symb_to_ns">Move types/symbols to a different namespace</summary>
@@ -663,77 +674,74 @@ NewClass m_newCls;
 
 You need to add a `static constexpr` for each enum field since it
 is unscoped in the old class.
-
-</details>
 -->
+</details>
 <h2 id="other-reasonably-safe-changes">Other reasonably safe
 changes:</h2>
 <ul>
-<li>Adding <code>[[nodiscard]]</code> or <code>explicit</code>, if they
-help prevent bugs in user’s code</li>
-<li>Making a member function <code>static</code> if it doens’t use any
-members, since <code>obj.SomeMethod(..)</code> style calls will still
-compile.</li>
-<li>Removing the <code>const</code> when returning by value:
-<code>const RetT SomeMethod()</code>, except from virtual methods, since
-derived classes can overide them. Be wary of cases where the method
-called can change from <code>Foo(const RetT&amp;)</code> to
-<code>Foo(RetT&amp;)</code>, when called like so:
-<code>Foo(SomeMethod())</code>.</li>
-<li>Converting a class that has only static methods to a namespace (make
-sure the constructor is private and deprecate it if not)</li>
-<li>Changing the underlying type of an enum (e.g. from
-<code>enum class Flags: int</code> to
-<code>enum class Flags: int64_t</code>), except if it’s serialized to
-binary data</li>
-</ul>
-<!--
-## <a name="quirks"/> Quirks
-
-<details>
-  <summary style="font-size:20px" id="widen_enum">"Widening" the underlying type of an unscoped enum</summary>
-
-**!Todo** add tests for this claim
-
-### Scenario: When using enums to work with bitfields,
-we might not think ahead and end up in a situation where we
-want to add a new enum value D after C however we are at the
-limit of the default underlying type, i.e. `int`.
-
-```cpp
-enum SomeEnum {
-  ...,
-  B = 1 << 30,
-  C = 1 << 31,
-  // D = 1 << 32, UB or a warning/error when uncommented
-};
-```
-
-Change to
-
-```cpp
-enum SomeEnum : std::uint64_t {
-  ...,
-  B = 1 << 30,
-  C = 1 << 31,
-  D = 1ull << 32,
-};
-```
-
-### Remarks:
-This is already backwards-compatible, because the following code does not
-give any underflow warnings.
-
-```cpp
-unsigned x = SomeEnum::C;
-```
-
-</details>
--->
-<h2 id="other-todos">Other TODOs</h2>
+<li>Adding <code>const</code> to a member function
+(<code>int Get();</code> -&gt; <code>int Get() const;</code>)</li>
+<li>Making a member function <code>static</code>
+(<code>int Get() const;</code> -&gt; <code>static int Get();</code>)
 <ul>
-<li>Add tests to ensure no breakings for dynamic libraries. (Hint: ODR +
-static members)</li>
+<li>the code <code>obj.Get(..)</code> will still compile.</li>
+</ul></li>
+<li>Adding <code>[[nodiscard]]</code>
+(<code>[[nodiscard]] int Get()</code> or
+<code>class [[nodiscard]] Result</code>)
+<ul>
+<li>should not be added to any random class or methods that have side
+effects (the user might have called the method for its side
+effectes)</li>
+</ul></li>
+<li>Adding <code>explicit</code> to a constructor with only 1 parameter.
+<ul>
+<li>except for classes that are expected to be implicitly constructed
+from that 1 parameter.</li>
+</ul></li>
+<li>Removing the <code>const</code> when returning by value:
+<code>const RetT SomeMethod()</code>
+<ul>
+<li>except from non-private virtual methods, since the user’s derived
+class might overide them.</li>
+<li>this change can break some rare cases (see <a
+href="neg-tests/RemoveConstReturnByValueTest.cpp">neg-tests/RemoveConstReturnByValueTest.cpp</a>):
+<ul>
+<li><code>auto&amp; val = SomeMethod();</code> was valid code until we
+removed the <code>const</code></li>
+<li>the return type was passed directly to a method with 2 overloads
+<code>Foo(const RetT&amp;)</code> to <code>Foo(RetT&amp;)</code>, it now
+calls the non-const one.</li>
+<li>if SomeMethod returns <code>Base</code> now by value and
+<code>Derived</code> has an implicit constructor from <code>Base</code>,
+you can get incompatible types in ternary operators:
+<code>cond ? const Derived : Base</code>
+(<code>cond ? Derived{} : SomeMethod();</code>)</li>
+</ul></li>
+</ul></li>
+<li>Converting a class that has only static methods to a namespace
+<ul>
+<li>make sure the constructors and operator= are private, otherwise
+deprecate them before changing the class to a namespace</li>
+</ul></li>
+<li>Changing the underlying type of an enum (e.g. from
+<code>enum Flags</code> to <code>enum Flags: uint64_t</code>, which
+happens when the enum is used as bit flags and we need to add another
+entry after <code>1&lt;&lt;31</code>)
+<ul>
+<li>except if users depend on sizeof(Flags), e.g. if they serialize it
+to binary data</li>
+<li><code>int x = Flags::X</code>, where
+<code>X=1ull &lt;&lt; 31</code>, will still compile and it will not
+overflow, even if <code>Flags</code> is now of type
+<code>uint64_T</code>, since the compiler sees that the value of
+<code>X</code> still fits inside <code>int</code></li>
+</ul></li>
+</ul>
+<h2 id="todos">TODOs</h2>
+<ul>
+<li>Add tests to ensure no breakings for dynamic libraries. (So we check
+ODR violations as well)</li>
 <li>Change a base class by making the new one extend from the old
 one</li>
 <li>…</li>

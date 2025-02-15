@@ -1,7 +1,7 @@
 # Backwards Compatibility tricks for API changes in C++
 
-This project contains "tricks" on how to make API changes backwards compatible
-(Eg. changing return types, renaming namespaces, changing enums to enum classes etc.)
+This project contains "tricks" on how to make backwards compatible API changes.
+(Eg. renaming a class, changing parameter types, converting an enum to a variant etc.)
 
 It contains also tests (see /tests and /neg-tests) to prove that
 the tricks make them backwards compatible and don't break something else.
@@ -232,7 +232,15 @@ Rename/move using the versioning tool (Git/SVN) so you don't lose blame history.
 
 
 <details>
-  <summary style="font-size:20px" id="change_ret_type">Change the return type (or "overload" by return type)</summary>
+  <summary style="font-size:20px" id="change_ret_type">Change the return type</summary>
+
+### Warning:
+
+Prefer to just add a new method called slightly different instead.
+What's about to follow is over-engineered.
+
+In short: we will overload the implicit cast operator of the returned type,
+and if the returned type is a primitive, we will create a new type that wraps it.
 
 ### Initial code:
 
@@ -242,8 +250,9 @@ bool CheckPassword(std::string);
 
 // (2) change some primitive `const T&` to primitive `T`
 struct Strukt {
-const float& GetMemF() const {
-return m_memF; }
+  const float& GetMemF() const { return m_memF; }
+private:
+  float m_memF;
 };
 ```
 
@@ -253,30 +262,20 @@ return m_memF; }
 Make this method return some meaningful error message so the user knows why it
 failed (why it returned false).
 
-(2) `Strukt::GetMemF` returns primitive types as const& which is bad for
-multiple reasons. We need to return by value.
+(2) `Strukt::GetMemF` returns a primitive type as const& which is bad for multiple reasons
+(performance, [lifetime](https://www.sandordargo.com/blog/2020/11/18/when-use-const-3-return-types#returning-const-references), complexity issues).
+We need to return by value.
 
-However, we cannot just overload a function by return type and then deprecate
-it.
+Unfortunately, we cannot just overload a function by return type and then deprecate it.
 
 ### Solution:
 
-For (1): Return a new type that can be implicitly casted to bool.
+For situation (1): Return a new type that can be implicitly casted to bool.
 
 - (1.1): If you don't want it to be implicitly casted to other primitive types like
   `int`, since C++20 you can make it conditionally explicit.
   (In the tests, `int x = CheckPassword("");` doesn't compile after the API change,
   while `bool x = CheckPassword("");` does)
-
-For (2): Add a new class with an implicit cast operator to `NewRetT` and `OldRetT`.
-
-- (2.1) Additionally, if the compiler can't decide between the 2 cast operators
-  at overload resolution,
-  templating the old one makes it choose the new overload candidate since it's
-  more specialized.
-- (2.2) Return GetterRetT by const& to avoid dangling references in user's
-  Wrappers that only
-  forward the old `const float&`
 
 ```diff
 // (1) change primitive `T` to `NewUserDefT`
@@ -288,27 +287,32 @@ For (2): Add a new class with an implicit cast operator to `NewRetT` and `OldRet
 + };
 - bool CheckPassword(std::string);
 + CheckPasswordResult CheckPassword(std::string);
+```
 
+For situation (2): Add a new class `GetterRetT` with 2 implicit cast operators to `NewRetT` and to `OldRetT`.
+"Mark" the implicit cast operator to `OldRetT` as deprecated and as "less specialized"
+(i.e. as template, so that the compiler will choose at "overload resolution" the `NewRetT` overload).
+
+Additionally, inside the `Strukt` return `GetterRetT` by `const&` so that we avoid runtime
+exceptions from dangling references in user's code in case they have a StruktWrapper class that
+also has a `const float& GetMemF()` that called and returned the result of our `GetMemF()`.
+
+```diff
 // (2) change primitive `const T&` to primitive `T`
-+ struct SomeMethodRetT {
++ struct GetterRetT {
 +   template <int = 0> // (2.1)
 +   operator OldRetT () const { ... }
 +   operator NewRetT () const { ... }
 + };
+
 struct Strukt {
 -   const float& GetMemF() const { return m_memF; }
--   float m_memF = 3.f;
-+   // (2.2)
 +   const GetterRetT& GetMemF() const { return m_memF; }
+private:
+-   float m_memF = 3.f;
 +   GetterRetT m_memF = 3.f;
 };
 ```
-
-### Remarks:
-
-The implicit cast may happen in unintended Scenarios.
-Also, you might want to deprecate the `OldRetT` cast operator and
-the `GetterRetT` type.
 
 ### Relevant Files:
 
@@ -320,54 +324,62 @@ the `GetterRetT` type.
 
 </details>
 
-<!--
 <details>
   <summary style="font-size:20px" id="change_to_enum_class">Change old-style enum to enum class</summary>
+
+### Warning:
+
+The proposed solution will break implicit conversion from the enum to integers.
 
 ### Initial code:
 
 ```cpp
-enum Handler {
-    StdOut,
-    StdErr,
-    File,
+enum Style {
+    STYLE_BOLD,
+    STYLE_ITALLIC,
+    STYLE_STRIKE_THROUGH,
 };
 ```
 
 ### Scenario:
 
-We need to modernize the API to use enum classes instead.
+We need to modernize the API to use `enum class` instead.
 
 ### Solution:
 
-In order to not break unscoped uses of the enum, we should define static
-variables for each enum entry.
+In order to not break scoped uses of the enum (e.g. `auto style = Style::STYLE_BOLD`)
+we will duplicate the enum fields with the enum class's naming style,
+and make sure their value is assigned to the old enum fields.
+
+In order to not break unscoped uses of the enum (e.g. `auto style = STYLE_BOLD`),
+we will define static variables for each enum entry.
 
 ```diff
-- enum Handler {
-+ enum class Handler {
-    StdOut,
-    StdErr,
-    File,
+- enum Style {
++ enum class Style {
+    Bold,
+    Itallic,
+    StrikeThrough,
++   STYLE_BOLD = Bold,
++   STYLE_ITALLIC = Itallic,
++   STYLE_STRIKE_THROUGH = StrikeThrough,
 };
 
-+ static constexpr Handler StdOut = Handler::StdOut;
-+ static constexpr Handler StdErr = Handler::StdErr;
-+ static constexpr Handler File = Handler::File;
++ static inline Style STYLE_BOLD = Style::Bold;
++ static inline Style STYLE_ITALLIC = Style::Itallic;
++ static inline Style STYLE_STRIKE_THROUGH = Style::StrikeThrough;
 ```
 
 ### Remarks: 
 
-If the enum was used as bit flags, define bitwise operators as well.
+* Inspired by the [memory_order change in the standard](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0439r0.html)
 
-Note: Assuming you have a `Log` method with 2 overloads, for `int` and for `Handler`,
-and expect `Log(StdOut | StdErr)` to still call `Log(int)`, then
-the return type for the bitwise operators should be `int`, otherwise `Handler`:
+* If the enum was used as bit flags, define bitwise operators as well.
 
 ```cpp
 // Add `friend` if the enum lies inside a `struct`
-[friend] constexpr int operator|(Handler lhs, Handler rhs) {
-    return static_cast<int>(lhs) | static_cast<int>(rhs);
+[friend] inline Style operator|(Style lhs, Style rhs) {
+    return Style{static_cast<int>(lhs) | static_cast<int>(rhs)};
 }
 ```
 
@@ -378,6 +390,7 @@ the return type for the bitwise operators should be `int`, otherwise `Handler`:
 
 </details>
 
+<!--
 
 <details>
   <summary style="font-size:20px" id="move_symb_to_ns">Move types/symbols to a different namespace</summary>
@@ -477,66 +490,37 @@ NewClass m_newCls;
 
 You need to add a `static constexpr` for each enum field since it
 is unscoped in the old class.
+-->
 
 </details>
--->
 
 ## Other reasonably safe changes:
 
-* Adding `[[nodiscard]]` or `explicit`, if they help prevent bugs in user's code
-* Making a member function `static` if it doens't use any members, since `obj.SomeMethod(..)` style calls will still compile.
-* Removing the `const` when returning by value: `const RetT SomeMethod()`, except from virtual methods, since derived classes can overide them.
-Be wary of cases where the method called can change from `Foo(const RetT&)` to `Foo(RetT&)`, when called like so: `Foo(SomeMethod())`.
-* Converting a class that has only static methods to a namespace (make sure the constructor is private and deprecate it if not)
-* Changing the underlying type of an enum (e.g. from `enum class Flags: int` to `enum class Flags: int64_t`), except if it's serialized to binary data
+* Adding `const` to a member function (`int Get();` -> `int Get() const;`)
+* Making a member function `static` (`int Get() const;` -> `static int Get();`)
+	* the code `obj.Get(..)` will still compile.
+* Adding `[[nodiscard]]` (`[[nodiscard]] int Get()` or `class [[nodiscard]] Result`)
+	* should not be added to any random class or methods that have side effects (the user might have called the method for its side effectes)
+* Adding `explicit` to a constructor with only 1 parameter.
+	* except for classes that are expected to be implicitly constructed from that 1 parameter.
+* Removing the `const` when returning by value: `const RetT SomeMethod()`
+	* except from non-private virtual methods, since the user's derived class might overide them.
+	* this change can break some rare cases (see [neg-tests/RemoveConstReturnByValueTest.cpp](neg-tests/RemoveConstReturnByValueTest.cpp)):
+		* `auto& val = SomeMethod();` was valid code until we removed the `const`
+		* the return type was passed directly to a method with 2 overloads `Foo(const RetT&)` to `Foo(RetT&)`, it now calls the non-const one.
+		* if SomeMethod returns `Base` now by value and `Derived` has an implicit constructor from `Base`,
+		you can get incompatible types in ternary operators: `cond ? const Derived : Base` (`cond ? Derived{} : SomeMethod();`)
+* Converting a class that has only static methods to a namespace
+	* make sure the constructors and operator= are private, otherwise deprecate them before changing the class to a namespace
+* Changing the underlying type of an enum (e.g. from `enum Flags` to `enum Flags: uint64_t`,
+which happens when the enum is used as bit flags and we need to add another entry after `1<<31`)
+	* except if users depend on sizeof(Flags), e.g. if they serialize it to binary data
+	* `int x = Flags::X`, where `X=1ull << 31`, will still compile and it will not overflow,
+	even if `Flags` is now of type `uint64_T`, since the compiler sees that the value of `X` still fits inside `int`
 
-<!--
-## <a name="quirks"/> Quirks
 
-<details>
-  <summary style="font-size:20px" id="widen_enum">"Widening" the underlying type of an unscoped enum</summary>
+## TODOs
 
-**!Todo** add tests for this claim
-
-### Scenario: When using enums to work with bitfields,
-we might not think ahead and end up in a situation where we
-want to add a new enum value D after C however we are at the
-limit of the default underlying type, i.e. `int`.
-
-```cpp
-enum SomeEnum {
-  ...,
-  B = 1 << 30,
-  C = 1 << 31,
-  // D = 1 << 32, UB or a warning/error when uncommented
-};
-```
-
-Change to
-
-```cpp
-enum SomeEnum : std::uint64_t {
-  ...,
-  B = 1 << 30,
-  C = 1 << 31,
-  D = 1ull << 32,
-};
-```
-
-### Remarks:
-This is already backwards-compatible, because the following code does not
-give any underflow warnings.
-
-```cpp
-unsigned x = SomeEnum::C;
-```
-
-</details>
--->
-
-## Other TODOs
-
-- Add tests to ensure no breakings for dynamic libraries. (Hint: ODR + static
-  members)
+- Add tests to ensure no breakings for dynamic libraries. (So we check ODR violations as well)
 - Change a base class by making the new one extend from the old one
 - ...
