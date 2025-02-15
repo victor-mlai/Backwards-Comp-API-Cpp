@@ -101,9 +101,10 @@ file for visibility purposes
 
 ```cpp
 void SomeMethod(
-    const int mandatory,
-    const bool opt1 = false,
-    const float opt2 = 1e-6
+    int mandatory,
+    bool opt1 = false,
+    float opt2 = 1e-6f,
+    int opt3 = 42
 ) { ... }
 ```
 
@@ -124,17 +125,18 @@ specialized by making it a template.
 ```diff
 + template<int = 0>
 void SomeMethod(
-    const int mandatory,
-    const bool opt1 = false,
-    const float opt2 = 1e-6
+    int mandatory,
+    bool opt1 = false,
+    float opt2 = 1e-6f,
+    int opt3 = 42
 + ) {
 +  // Call the new implementation now
-+  SomeMethod(mandatory, SomeMethodOpts{opt1, opt2});
++  SomeMethod(mandatory, SomeMethodOpts{opt1, opt2, opt3});
 + }
 + 
-+ struct SomeMethodOpts { bool opt1 = false; float opt2 = 1e-6; };
++ struct SomeMethodOpts { bool opt1 = false; float opt2 = 1e-6; int opt3 = 42; };
 + void SomeMethod(
-+     const int mandatory,
++     int mandatory,
 +     SomeMethodOpts opts = {}
 ) { ... }
 ```
