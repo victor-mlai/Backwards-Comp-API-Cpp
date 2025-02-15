@@ -559,12 +559,17 @@ class="sourceCode diff"><code class="sourceCode diff"><span id="cb14-1"><a href=
 href="https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0439r0.html">memory_order
 change in the standard</a></p></li>
 <li><p>If the enum was used as bit flags, define bitwise operators as
-well.</p></li>
+well. And if there were methods that recieved the unscoped enum as
+<code>int</code>, overload them to receive the scoped enum now (since
+the bitwise operators return the scoped enum, if they were to return an
+<code>int</code>, users will not be able to chain more than 2 of them:
+e.g.
+<code>Print(STYLE_BOLD | STYLE_ITALLIC | STYLE_STRIKE_THROUGH) // operator|(Style, int) is not overloaded</code>).</p></li>
 </ul>
 <div class="sourceCode" id="cb15"><pre
 class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Add `friend` if the enum lies inside a `struct`</span></span>
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="op">[</span><span class="kw">friend</span><span class="op">]</span> <span class="kw">inline</span> Style <span class="kw">operator</span><span class="op">|(</span>Style lhs<span class="op">,</span> Style rhs<span class="op">)</span> <span class="op">{</span></span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> Style<span class="op">{</span><span class="kw">static_cast</span><span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;(</span>lhs<span class="op">)</span> <span class="op">|</span> <span class="kw">static_cast</span><span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;(</span>rhs<span class="op">)};</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="kw">static_cast</span><span class="op">&lt;</span>Style<span class="op">&gt;(</span><span class="kw">static_cast</span><span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;(</span>lhs<span class="op">)</span> <span class="op">|</span> <span class="kw">static_cast</span><span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;(</span>rhs<span class="op">));</span></span>
 <span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <h3 id="relevant-files-4">Relevant Files:</h3>
 <ul>

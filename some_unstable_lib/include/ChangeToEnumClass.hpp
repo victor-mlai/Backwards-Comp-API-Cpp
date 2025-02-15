@@ -1,4 +1,6 @@
 #pragma once
+#include <string>       // string_view
+#include <type_traits>  // underlying_type_t
 
 struct Text {
 #ifndef BC_API_CHANGED
@@ -24,7 +26,13 @@ struct Text {
     // If the enum was used as bit flags, define bitwise operators as well.
     friend inline Style operator|(Style lhs, Style rhs) {
         using ut = std::underlying_type_t<Style>;
-        return Style{static_cast<ut>(lhs) | static_cast<ut>(rhs)};
+        return static_cast<Style>(static_cast<ut>(lhs) | static_cast<ut>(rhs));
     }
 #endif
 };
+
+// If you have methods that received Style as int, overload them to receive Style
+void Print(std::string_view /*text*/, int /*style*/) {}
+#ifdef BC_API_CHANGED
+void Print(std::string_view /*text*/, Text::Style /*style*/) {}
+#endif

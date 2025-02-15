@@ -375,11 +375,15 @@ we will define static variables for each enum entry.
 * Inspired by the [memory_order change in the standard](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0439r0.html)
 
 * If the enum was used as bit flags, define bitwise operators as well.
+And if there were methods that recieved the unscoped enum as `int`,
+overload them to receive the scoped enum now (since the bitwise operators return the scoped enum,
+if they were to return an `int`, users will not be able to chain more than 2 of them: e.g.
+`Print(STYLE_BOLD | STYLE_ITALLIC | STYLE_STRIKE_THROUGH) // operator|(Style, int) is not overloaded`).
 
 ```cpp
 // Add `friend` if the enum lies inside a `struct`
 [friend] inline Style operator|(Style lhs, Style rhs) {
-    return Style{static_cast<int>(lhs) | static_cast<int>(rhs)};
+    return static_cast<Style>(static_cast<int>(lhs) | static_cast<int>(rhs));
 }
 ```
 
