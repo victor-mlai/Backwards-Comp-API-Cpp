@@ -17,6 +17,7 @@ TEST(RemoveConstReturnByValueTest_Neg, AutoRef) {
     auto& temp = GetStr();
     // Fixable by removing the referene
     //auto temp = GetStr();
+    (void)temp;
 }
 
 // #2 The returned variable was a Base class, and also used inside a ternary operator
