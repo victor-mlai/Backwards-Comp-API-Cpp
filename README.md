@@ -509,6 +509,7 @@ is unscoped in the old class.
 	* should not be added to any random class or methods that have side effects (the user might have called the method for its side effectes)
 * Adding `explicit` to a constructor with only 1 parameter.
 	* except for classes that are expected to be implicitly constructed from that 1 parameter.
+* Removing the `const&` when passing a copyable and movable parameter (`void Set(const int&);` -> `void Set(int);`)
 * Removing the `const` when returning by value: `const RetT SomeMethod()`
 	* except from non-private virtual methods, since the user's derived class might overide them.
 	* this change can break some rare cases (see [neg-tests/RemoveConstReturnByValueTest.cpp](neg-tests/RemoveConstReturnByValueTest.cpp)):

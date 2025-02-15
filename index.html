@@ -706,6 +706,9 @@ effectes)</li>
 <li>except for classes that are expected to be implicitly constructed
 from that 1 parameter.</li>
 </ul></li>
+<li>Removing the <code>const&amp;</code> when passing a copyable and
+movable parameter (<code>void Set(const int&amp;);</code> -&gt;
+<code>void Set(int);</code>)</li>
 <li>Removing the <code>const</code> when returning by value:
 <code>const RetT SomeMethod()</code>
 <ul>
