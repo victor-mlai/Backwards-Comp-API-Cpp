@@ -24,11 +24,11 @@ TEST(RemoveConstReturnByValueTest_Neg, AutoRef) {
 // After the `const` is removed we get error: incompatible types in ternary operator: ? `const Derived` : `Base`
 struct Base {};
 struct Derived : Base {
-    Derived();
-    Derived(const Base&);
+    Derived() = default;
+    Derived(const Base& base) : Base(base) {}
 };
 
-void UseDerived(const Derived&);
+void UseDerived(const Derived&) {}
 
 #ifndef BC_API_CHANGED
 const Base GetBase() {
@@ -67,9 +67,9 @@ Val GetVal() {
 }
 #endif  // !BC_API_CHANGED
 
-void Ambig(double&, bool = true);
-void Ambig(double&, int = 0);
-void Ambig(const double&);
+void Ambig(double&, bool = true) {}
+void Ambig(double&, int = 0) {}
+void Ambig(const double&) {}
 
 TEST(RemoveConstReturnByValueTest_Neg, OverloadChanged) {
     Ambig(GetVal().Get());
