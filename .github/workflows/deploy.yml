@@ -3,7 +3,7 @@ name: Deploy README to GitHub Pages
 on:
   push:
     branches:
-      - main  # Adjust if your default branch is different
+      - main
 
 permissions:
   contents: write
@@ -19,7 +19,7 @@ jobs:
         run: sudo apt-get install -y pandoc
 
       - name: Convert README.md to index.html
-        run: pandoc README.md -f markdown -t html -s -o index.html --metadata title="BC API tricks"
+        run: pandoc README.md -s -o index.html --css=styles.css --metadata title="BC API tricks"
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
