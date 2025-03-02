@@ -10,7 +10,7 @@ body {
 h1,
 h2,
 h3 {
-    color: #4fc3f7;
+    color: #96c9e1;
 }
 
 a {
@@ -36,9 +36,8 @@ pre {
     /* Dark gray for code blocks */
     color: #f8f8f2;
     /* Light text for code */
-    padding: 10px;
+    padding: 5px;
     border-radius: 5px;
-    overflow-x: auto;
     border: 1px solid #444;
     /* Slight border for separation */
 }
@@ -48,41 +47,27 @@ pre code {
     padding: 0;
 }
 
-/* C++ Code Snippets */
-.sourceCode.cpp {
+.sourceCode {
     background-color: #333;
     border-radius: 5px;
-}
-
-.sourceCode.cpp code {
-    background-color: transparent;
-    color: #f8f8f2;
-}
-
-/* Diff Blocks */
-.sourceCode.diff {
-    background-color: #333;
-    border-radius: 5px;
+    overflow: auto;
 }
 
 /* Added Lines in Diffs */
 .sourceCode.diff .va {
     background-color: #2a5c2a;
     color: #6bff6b;
-    padding: 2px 4px;
 }
 
 /* Removed Lines in Diffs */
 .sourceCode.diff .st {
     background-color: #5c2a2a;
     color: #ff6b6b;
-    padding: 2px 4px;
 }
 
 /* Unmodified Lines in Diffs */
 .sourceCode.diff span:not(.va):not(.st) {
     color: #f8f8f2;
-    padding: 2px 4px;
 }
 
 /* Lists */
