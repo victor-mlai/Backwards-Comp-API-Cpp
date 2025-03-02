@@ -1,22 +1,25 @@
-# Backwards Compatibility tricks for API changes in C++
+# Making C++ API changes Backwards Compatible
 
 This project contains "tricks" on how to make backwards compatible API changes.
 (Eg. renaming a class, changing parameter types, converting an enum to a variant etc.)
 
-It contains also tests (see /tests and /neg-tests) to prove that
-the tricks make them backwards compatible and don't break something else.
+It contains tests (see /tests) to ensure that
+these tricks are indeed backwards compatible and showcase what cases (if any) will they break.
 
-Some of them also have negative tests to show some edge cases for when the
-API change trick breaks code that previously compiled.
+Some of them also have negative tests (see /neg-tests) to showcase some rare cases where the
+API change breaks code that previously compiled, even with the "trick".
 
-# Notice
+# Contributing
 
 This project just got created.
 
 Please feel free to create Issues and Pull Requests to improve this list.
 
-These tricks are not focussed to not **break ABI**,
-forward declarations or function pointer aliases.
+# Warning
+
+These tricks assume the users of your API don't require ABI compatibility, or use
+forward declarations or function pointer aliases for your types
+(In general, they shouldn't forward declare foreign types).
 
 # Project internals
 
@@ -29,27 +32,30 @@ before and after the API change.
 /neg-tests contains code that should not compile after the API change.
 One file per each such case.
 
-All tests are run twice, with the macro BC_API_CHANGED OFF (before the API change)
-and ON (after).
+All tests are run twice:
+
+1. with the macro `BC_API_CHANGED` OFF (before the API change)
+2. and ON (after).
 
 
-<!--
 # Overview
-* [Rename/Move a namespace](#mv-namespace)
-* [Change method with default parameters to receive a struct with those parameters](#change_defaults)
-* [Rename/Move a type](#mv-type)
-* [Rename/Move a header](#mv-header)
-* [Change the return type (or "overloading" by return type)](#change_ret_type)
+* [Rename a namespace](#mv_namespace)
+* [Rename a type](#mv_type)
+* [Rename a header](#mv_header)
+* [Change default parameters](#change_defaults)
+* [Change the return type](#change_ret_type)
 * [Reasonably safe changes](#reasonably_safe_changes)
+<!--
 * [Move symbols to a different namespace](#move_symb_to_ns)
 * [Move symbols to a different class](#move_symb_to_class)
 -->
 
 
-# How to, in a backwards compatible way:
+# How to:
 
-<details>
-  <summary style="font-size:20px" id="mv-namespace">Rename a namespace</summary>
+<a id="mv_namespace"></a>
+
+## Rename a namespace
 
 ### Initial code:
 
@@ -91,70 +97,10 @@ file for visibility purposes
 * API: [NamespaceRename.hpp](some_unstable_lib/include/NamespaceRename.hpp)
 * User: [NamespaceRenameTest.cpp](tests/NamespaceRenameTest.cpp)
 
-</details>
 
+<a id="mv_type"></a>
 
-<details>
-  <summary style="font-size:20px" id="change_defaults">Change method taking default parameters to taking struct</summary>
-
-### Initial code:
-
-```cpp
-void SomeMethod(
-    int mandatory,
-    bool opt1 = false,
-    float opt2 = 1e-6f,
-    int opt3 = 42
-) { ... }
-```
-
-### Scenario:
-
-This method receives too many default parameters, and it only becomes
-harder for users to call it with only 1 or 2 parameters changed. We need to
-change the method to receive a struct containing these parameters instead.
-
-### Solution:
-
-If you just add the new `SomeMethod`, users calling `SomeMethod` with
-just the mandatory parameters will have the compiler complain about ambiguity
-(it won't know which of the 2 methods to choose from).
-To tell it to prefer the newer one we need to make the old one less
-specialized by making it a template.
-
-```diff
-+ template<int = 0>
-void SomeMethod(
-    int mandatory,
-    bool opt1 = false,
-    float opt2 = 1e-6f,
-    int opt3 = 42
-+ ) {
-+  // Call the new implementation now
-+  SomeMethod(mandatory, SomeMethodOpts{opt1, opt2, opt3});
-+ }
-+ 
-+ struct SomeMethodOpts { bool opt1 = false; float opt2 = 1e-6; int opt3 = 42; };
-+ void SomeMethod(
-+     int mandatory,
-+     SomeMethodOpts opts = {}
-) { ... }
-```
-
-### Remarks:
-
-You can deprecate the old `SomeMethod` (now a template)
-
-### Relevant Files:
-
-* API: [MethodDefaultParams.hpp](some_unstable_lib/include/MethodDefaultParams.hpp)
-* User: [MethodDefaultParamsTest.cpp](tests/MethodDefaultParamsTest.cpp)
-
-</details>
-
-
-<details>
-  <summary style="font-size:20px" id="mv-type">Rename a type</summary>
+## Rename a type
 
 ### Initial code:
 
@@ -188,11 +134,10 @@ We can use a type alias.
 * API: [StructRename.hpp](some_unstable_lib/include/StructRename.hpp)
 * User: [StructRenameTest.cpp](tests/StructRenameTest.cpp)
 
-</details>
 
+<a id="mv_header"></a>
 
-<details>
-  <summary style="font-size:20px" id="mv-header">Move a header</summary>
+## Rename a header
 
 ### Initial code:
 
@@ -203,38 +148,98 @@ We can use a type alias.
 
 ### Scenario:
 
-We need to move/rename the header to `v2/NewName.hpp`.
+We need to rename the header to `v2/NewName.hpp`.
 
 ### Solution:
 
-1. Move/rename the header:
+1. Rename the header:
 
 ```diff
 - // v1/OldName.hpp:
-+ // v2/NewName.hpp: <- only moved/renamed
++ // v2/NewName.hpp:
 ...
 ```
 
 2. Create a compatibility header file in the old location that includes
-  the renamed/moved one.
+  the renamed one.
 
 ```cpp
 // v1/OldName.hpp: <- created to only include the renamed header + deprecation notice
 #include "v2/NewName.hpp"
 
-// You can also deprecate it by inserting a compilation error/warning:
-// #error/warning OldName.hpp is deprecated, include "v2/NewName.hpp".`
+// You can also deprecate it by inserting a compilation warning:
+// #warning OldName.hpp is deprecated, include "v2/NewName.hpp".`
+// Don't use #error since there is no way for users to silence it.
 ```
 
 ### Remarks:
 
-Rename/move using the versioning tool (Git/SVN) so you don't lose blame history.
+Rename using your versioning tool (Git/SVN) so you don't lose blame history.
+For Git, do the change 2 steps in 2 different commits.
 
-</details>
+
+<a id="change_defaults"></a>
+
+## Change default parameters
+
+### Initial code:
+
+```cpp
+void SomeMethod(
+    int mandatory,
+    bool opt1 = false,
+    float opt2 = 1e-6f,
+    int opt3 = 42
+) { ... }
+```
+
+### Scenario:
+
+This method receives too many default parameters, and it only becomes
+harder for users to call it with only 1 or 2 parameters changed. We need to
+change the method to receive a struct containing these parameters instead.
+
+### Solution:
+
+If you would just add the new `SomeMethod` with the default parameters changed,
+users calling `SomeMethod` with just the mandatory parameters will have the
+compiler complain about ambiguity (it won't know which of the 2 methods to call).
+
+To tell the compiler to prefer the newer method we need to make the old one less
+specialized by making it a template.
+
+```diff
++ template<int = 0>
+void SomeMethod(
+    int mandatory,
+    bool opt1 = false,
+    float opt2 = 1e-6f,
+    int opt3 = 42
++ ) {
++  // Call the new implementation now
++  SomeMethod(mandatory, SomeMethodOpts{opt1, opt2, opt3});
++ }
++ 
++ struct SomeMethodOpts { bool opt1 = false; float opt2 = 1e-6; int opt3 = 42; };
++ void SomeMethod(
++     int mandatory,
++     SomeMethodOpts opts = {}
+) { ... }
+```
+
+### Remarks:
+
+You can deprecate the old `SomeMethod` (now a template)
+
+### Relevant Files:
+
+* API: [MethodDefaultParams.hpp](some_unstable_lib/include/MethodDefaultParams.hpp)
+* User: [MethodDefaultParamsTest.cpp](tests/MethodDefaultParamsTest.cpp)
 
 
-<details>
-  <summary style="font-size:20px" id="change_ret_type">Change the return type</summary>
+<a id="change_ret_type"></a>
+
+## Change the return type
 
 ### Warning:
 
@@ -272,12 +277,7 @@ Unfortunately, we cannot just overload a function by return type and then deprec
 
 ### Solution:
 
-For situation (1): Return a new type that can be implicitly casted to bool.
-
-- (1.1): If you don't want it to be implicitly casted to other primitive types like
-  `int`, since C++20 you can make it conditionally explicit.
-  (In the tests, `int x = CheckPassword("");` doesn't compile after the API change,
-  while `bool x = CheckPassword("");` does)
+For situation (1): Add `operator bool()` so that the new type can be implicitly casted to `bool`.
 
 ```diff
 // (1) change primitive `T` to `NewUserDefT`
@@ -290,6 +290,11 @@ For situation (1): Return a new type that can be implicitly casted to bool.
 - bool CheckPassword(std::string);
 + CheckPasswordResult CheckPassword(std::string);
 ```
+
+- (1.1): If you want to take it a step further, and allow implicit casts only to `bool`,
+since C++20 you can make the cast operator conditionally explicit
+(In the tests, `int x = CheckPassword("");` doesn't compile after the API change,
+while `bool x = CheckPassword("");` does. See [neg-tests/ReturnTypeChangeTest.cpp](neg-tests/ReturnTypeChangeTest.cpp))
 
 For situation (2): Add a new class `GetterRetT` with 2 implicit cast operators to `NewRetT` and to `OldRetT`.
 "Mark" the implicit cast operator to `OldRetT` as deprecated and as "less specialized"
@@ -324,22 +329,24 @@ private:
   [tests/ReturnTypeChangeByValueTest.hpp](tests/ReturnTypeChangeByValueTest.hpp)
 * Neg: [neg-tests/ReturnTypeChangeTest.cpp](neg-tests/ReturnTypeChangeTest.cpp)
 
-</details>
 
-<details>
-  <summary style="font-size:20px" id="change_to_enum_class">Change old-style enum to enum class</summary>
+<a id="change_to_enum_class"></a>
+
+## Change old-style enum to enum class
 
 ### Warning:
 
-The proposed solution will break implicit conversion from the enum to integers.
+Changing the enum to enum class will inherently break implicit conversions
+to integers, which can happen when the enum is used as bit flags
+(e.g. `STYLE_BOLD | STYLE_ITALLIC` results in a `int`).
 
 ### Initial code:
 
 ```cpp
 enum Style {
-    STYLE_BOLD,
-    STYLE_ITALLIC,
-    STYLE_STRIKE_THROUGH,
+    STYLE_BOLD = 1 << 1,
+    STYLE_ITALLIC = 1 << 2,
+    STYLE_STRIKE_THROUGH = 1 << 3,
 };
 ```
 
@@ -394,12 +401,12 @@ if they were to return an `int`, users will not be able to chain more than 2 of 
 * API: [ChangeToEnumClass.hpp](some_unstable_lib/include/ChangeToEnumClass.hpp)
 * User: [ChangeToEnumClassTest.cpp](tests/ChangeToEnumClassTest.cpp)
 
-</details>
 
 <!--
 
-<details>
-  <summary style="font-size:20px" id="move_symb_to_ns">Move types/symbols to a different namespace</summary>
+<a id="move_symb_to_ns"></a>
+
+## Move types/symbols to a different namespace
 
 ### Initial code:
 
@@ -445,11 +452,10 @@ using path::to::v2::SomeEnum::C;
 
 ### Relevant Files:
 
-</details>
 
+<a id="move_symb_to_class"></a>
 
-<details>
-  <summary style="font-size:20px" id="move_symb_to_class">Move types/symbols to a different class</summary>
+## Move types/symbols to a different class
 
 ### Initial code:
 
@@ -498,32 +504,36 @@ You need to add a `static constexpr` for each enum field since it
 is unscoped in the old class.
 -->
 
-</details>
+
+<a id="reasonably_safe_changes"></a>
 
 ## Other reasonably safe changes:
 
-* Adding `const` to a member function (`int Get();` -> `int Get() const;`)
-* Making a member function `static` (`int Get() const;` -> `static int Get();`)
+* Adding `const` to a member function (`T Get();` -> `T Get() const;`)
+* Making a member function `static` (`T Get() const;` -> `static T Get();`)
 	* the code `obj.Get(..)` will still compile.
 * Adding `[[nodiscard]]` (`[[nodiscard]] int Get()` or `class [[nodiscard]] Result`)
 	* should not be added to any random class or methods that have side effects (the user might have called the method for its side effectes)
 * Adding `explicit` to a constructor with only 1 parameter.
 	* except for classes that are expected to be implicitly constructed from that 1 parameter.
-* Removing the `const&` when passing a copyable and movable parameter (`void Set(const int&);` -> `void Set(int);`)
-* Removing the `const` when returning by value: `const RetT SomeMethod()`
+* Removing the `const&` when passing a copyable parameter (`void Set(const T&);` -> `void Set(T);`)
+	* e.g. cannot remove `const&` from `void Set(const std::unique_ptr<T>&);` since unique_ptr is not copyable
+* Removing the `const` when returning by value: `const RetT Get()`
 	* except from non-private virtual methods, since the user's derived class might overide them.
 	* this change can break some rare cases (see [neg-tests/RemoveConstReturnByValueTest.cpp](neg-tests/RemoveConstReturnByValueTest.cpp)):
-		* `auto& val = SomeMethod();` was valid code until we removed the `const`
+		* `auto& val = Get();` was valid code until we removed the `const`
 		* the return type was passed directly to a method with 2 overloads `Foo(const RetT&)` to `Foo(RetT&)`, it now calls the non-const one.
-		* if SomeMethod returns `Base` now by value and `Derived` has an implicit constructor from `Base`,
-		you can get incompatible types in ternary operators: `cond ? const Derived : Base` (`cond ? Derived{} : SomeMethod();`)
+		* if `Get` returns `Base` now by value and `Derived` has an implicit constructor from `Base`,
+		you can get incompatible types in ternary operators: `cond ? const Derived : Base` (`cond ? Derived{} : Get();`)
 * Converting a class that has only static methods to a namespace
 	* make sure the constructors and operator= are private, otherwise deprecate them before changing the class to a namespace
 * Changing the underlying type of an enum (e.g. from `enum Flags` to `enum Flags: uint64_t`,
 which happens when the enum is used as bit flags and we need to add another entry after `1<<31`)
 	* except if users depend on sizeof(Flags), e.g. if they serialize it to binary data
-	* `int x = Flags::X`, where `X=1ull << 31`, will still compile and it will not overflow,
-	even if `Flags` is now of type `uint64_T`, since the compiler sees that the value of `X` still fits inside `int`
+	* `int x = Flags::X`, where `X=1<<31`, will still compile and it will not overflow,
+	  even if `Flags` is now of type `uint64_T`, since the compiler sees that the value of `X` still fits inside `int`
+	* users will get warnings if they compile with `-Wconversion` and assign
+	  a value of type `Flags` into a now narrower type like an `int`
 
 
 ## TODOs

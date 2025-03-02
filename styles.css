@@ -1,0 +1,96 @@
+/* General Styles */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: #1e1e1e;
+    color: #e0e0e0;
+}
+
+h1,
+h2,
+h3 {
+    color: #4fc3f7;
+}
+
+a {
+    color: #64b5f6;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* Code and Preformatted Text */
+code {
+    background-color: #333;
+    padding: 2px 5px;
+    border-radius: 3px;
+    font-family: 'Courier New', Courier, monospace;
+    color: #f8f8f2;
+}
+
+pre {
+    background-color: #333;
+    /* Dark gray for code blocks */
+    color: #f8f8f2;
+    /* Light text for code */
+    padding: 10px;
+    border-radius: 5px;
+    overflow-x: auto;
+    border: 1px solid #444;
+    /* Slight border for separation */
+}
+
+pre code {
+    background-color: transparent;
+    padding: 0;
+}
+
+/* C++ Code Snippets */
+.sourceCode.cpp {
+    background-color: #333;
+    border-radius: 5px;
+}
+
+.sourceCode.cpp code {
+    background-color: transparent;
+    color: #f8f8f2;
+}
+
+/* Diff Blocks */
+.sourceCode.diff {
+    background-color: #333;
+    border-radius: 5px;
+}
+
+/* Added Lines in Diffs */
+.sourceCode.diff .va {
+    background-color: #2a5c2a;
+    color: #6bff6b;
+    padding: 2px 4px;
+}
+
+/* Removed Lines in Diffs */
+.sourceCode.diff .st {
+    background-color: #5c2a2a;
+    color: #ff6b6b;
+    padding: 2px 4px;
+}
+
+/* Unmodified Lines in Diffs */
+.sourceCode.diff span:not(.va):not(.st) {
+    color: #f8f8f2;
+    padding: 2px 4px;
+}
+
+/* Lists */
+ul {
+    padding-left: 20px;
+}
+
+/* Space between list items */
+ul li {
+    margin-bottom: 10px;
+}
