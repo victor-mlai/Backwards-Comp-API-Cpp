@@ -24,7 +24,7 @@ forward declarations or function pointer aliases for your types
 # Project internals
 
 /some_unstable_lib contains a header file for each API change in the list further down.
-Each header either exposes the old API or the changed one based on the macro BC_API_CHANGED.
+Each header either exposes the old API or the changed one based on the macro `BC_API_CHANGED`.
 
 /tests represents the users of the library whose code must compile
 before and after the API change.
@@ -36,6 +36,8 @@ All tests are run twice:
 
 1. with the macro `BC_API_CHANGED` OFF (before the API change)
 2. and ON (after).
+
+.github/workflows/deploy.yml pushes new changes to this README to Github Pages.
 
 
 # Overview
@@ -201,9 +203,9 @@ change the method to receive a struct containing these parameters instead.
 
 ### Solution:
 
-If you would just add the new `SomeMethod` with the default parameters changed,
-users calling `SomeMethod` with just the mandatory parameters will have the
-compiler complain about ambiguity (it won't know which of the 2 methods to call).
+If you would just overload `SomeMethod` with the default parameters changed,
+users calling `SomeMethod` with just the mandatory parameters will now have the
+compiler complain about ambiguity (that it doesn't know which of the 2 methods to call).
 
 To tell the compiler to prefer the newer method we need to make the old one less
 specialized by making it a template.
@@ -229,7 +231,12 @@ void SomeMethod(
 
 ### Remarks:
 
-You can deprecate the old `SomeMethod` (now a template)
+ * You can deprecate the old `SomeMethod` (now a template)
+ * If the definition needs to be in the .cpp file, and the function is dll exported, you need to explicitly instantiate the templated `SomeMethod` in the .cpp file
+```cpp
+template<> DLL_EXPORT void SomeMethod<0>(
+    int mandatory, bool opt1 = false, float opt2 = 1e-6f, int opt3 = 42);
+```
 
 ### Relevant Files:
 
@@ -336,17 +343,16 @@ private:
 
 ### Warning:
 
-Changing the enum to enum class will inherently break implicit conversions
-to integers, which can happen when the enum is used as bit flags
-(e.g. `STYLE_BOLD | STYLE_ITALLIC` results in a `int`).
+Changing the enum to enum class will inherently breaks implicit conversions
+to integers (e.g. when the enum is used as bit flags: `STYLE_BOLD | STYLE_ITALLIC` results in a `int`).
 
 ### Initial code:
 
 ```cpp
 enum Style {
-    STYLE_BOLD = 1 << 1,
-    STYLE_ITALLIC = 1 << 2,
-    STYLE_STRIKE_THROUGH = 1 << 3,
+    STYLE_BOLD,
+    STYLE_ITALLIC,
+    STYLE_STRIKE_THROUGH,
 };
 ```
 
@@ -366,9 +372,12 @@ we will define static variables for each enum entry.
 ```diff
 - enum Style {
 + enum class Style {
-    Bold,
-    Itallic,
-    StrikeThrough,
++   Bold,
++   Itallic,
++   StrikeThrough,
+-   STYLE_BOLD,
+-   STYLE_ITALLIC,
+-   STYLE_STRIKE_THROUGH,
 +   STYLE_BOLD = Bold,
 +   STYLE_ITALLIC = Itallic,
 +   STYLE_STRIKE_THROUGH = StrikeThrough,
