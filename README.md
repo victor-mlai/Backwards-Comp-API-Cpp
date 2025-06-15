@@ -1,13 +1,13 @@
-# Making C++ API changes Backwards Compatible
+# How to make C++ API changes Backwards Compatible
 
-This project contains "tricks" on how to make backwards compatible API changes.
-(Eg. renaming a class, changing parameter types, converting an enum to a variant etc.)
+I made this project to showcase some "tricks" on how to make backwards compatible API changes.
+(E.g. renaming files, types, changing parameter types, the return type, default parameters, an enum to `enum class` etc.)
 
-It contains tests (see /tests) to ensure that
-these tricks are indeed backwards compatible and showcase what cases (if any) will they break.
+I added some tests (in /tests) to ensure that
+these tricks are indeed backwards compatible.
 
-Some of them also have negative tests (see /neg-tests) to showcase some rare cases where the
-API change breaks code that previously compiled, even with the "trick".
+There are also negative tests (see /neg-tests) to showcase some rare cases where the
+API change breaks code that previously compiled.
 
 # Contributing
 
@@ -17,27 +17,23 @@ Please feel free to create Issues and Pull Requests to improve this list.
 
 # Warning
 
-These tricks assume the users of your API don't require ABI compatibility, or use
-forward declarations or function pointer aliases for your types
-(In general, they shouldn't forward declare foreign types).
+These tricks assume the users of the library API don't rely on ABI compatibility
+as well, or use forward declarations or function pointers (since, in general,
+they shouldn't do so with foreign types unless explicitly pointed out by the library).
 
 # Project internals
 
 /some_unstable_lib contains a header file for each API change in the list further down.
-Each header either exposes the old API or the changed one based on the macro `BC_API_CHANGED`.
+Each header exposes both the old API and the changed API based on the `BC_API_CHANGED` macro.
 
 /tests represents the users of the library whose code must compile
 before and after the API change.
 
 /neg-tests contains code that should not compile after the API change.
-One file per each such case.
 
-All tests are run twice:
+.github/workflows/deploy.yml updates Github Pages with the new changes from this README.
 
-1. with the macro `BC_API_CHANGED` OFF (before the API change)
-2. and ON (after).
-
-.github/workflows/deploy.yml pushes new changes to this README to Github Pages.
+.github/workflows/cmake.yml checks if the tests in /tests compile with the macro `BC_API_CHANGED` OFF (before the API change) and ON (after). It also checks that the negative tests compile before the API change, and **don't** compile after.
 
 
 # Overview
@@ -46,6 +42,7 @@ All tests are run twice:
 * [Rename a header](#mv_header)
 * [Change default parameters](#change_defaults)
 * [Change the return type](#change_ret_type)
+* [Change old-style enum to enum class](#change_to_enum_class)
 * [Reasonably safe changes](#reasonably_safe_changes)
 <!--
 * [Move symbols to a different namespace](#move_symb_to_ns)
@@ -253,8 +250,8 @@ template<> DLL_EXPORT void SomeMethod<0>(
 Prefer to just add a new method called slightly different instead.
 What's about to follow is over-engineered.
 
-In short: we will overload the implicit cast operator of the returned type,
-and if the returned type is a primitive, we will create a new type that wraps it.
+In short: we will overload the implicit cast operator of the new return type,
+and if the return type needs to be a primitive, we will create a new wrapper class.
 
 ### Initial code:
 
